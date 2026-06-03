@@ -30,6 +30,12 @@
   .header h1 { margin: 0; font-size: 20px; font-weight: 600; }
   .header .date { font-size: 12px; color: #888; margin-top: 2px; }
   .header-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: #555; padding: 4px 10px; min-width: 40px; min-height: 40px; }
+  .scheduled-time { font-size: 11px; color: #6b5b3f; font-weight: 600; padding: 6px 10px; text-align: right; min-width: 40px; line-height: 1.1; }
+  .scheduled-time .num { font-size: 14px; display: block; }
+  .scheduled-time .lbl { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: 0.4px; }
+  .scheduled-time.busy { color: #c04040; }
+  .scheduled-time.busy .lbl { color: #c04040; opacity: 0.85; }
+  .inbox-add-btn { display: block; width: calc(100% - 24px); margin: 12px; background: #6b5b3f; color: #faf8f3; border: none; border-radius: 10px; padding: 12px; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 44px; }
   .day-nav { display: flex; gap: 6px; align-items: center; }
   .day-nav button { background: #f3f0e8; border: none; width: 32px; height: 32px; border-radius: 16px; font-size: 16px; cursor: pointer; color: #6b5b3f; }
 
@@ -258,7 +264,10 @@
       <button id="todayBtn">●</button>
       <button id="nextDay">›</button>
     </div>
-    <button class="header-btn" id="addQuickBtn">+</button>
+    <div class="scheduled-time" id="scheduledTime" title="Scheduled time today">
+      <span class="num" id="scheduledTimeNum">0h</span>
+      <span class="lbl">scheduled</span>
+    </div>
   </div>
 
   <div class="content">
@@ -276,7 +285,6 @@
           </div>
           <div class="tray-scroll" id="trayScroll"></div>
         </div>
-        <div class="heavy-load-warning" id="heavyLoad" style="display:none;"></div>
         <div class="calendar-area" id="calendarArea"></div>
         <div class="checkout-prompt">
           <div class="row">
@@ -300,6 +308,7 @@
 
     <!-- INBOX -->
     <div class="screen" id="screen-inbox">
+      <button class="inbox-add-btn" id="inboxAddBtn">+ Add to inbox</button>
       <div class="triage-banner" id="triageBanner" style="display:none;">
         <b>5-task triage:</b> <span id="staleCount">0</span> task(s) sitting for 14+ days. Tap to do, defer, or delete.
       </div>
@@ -605,6 +614,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.getElementById('screen-' + screen).classList.add('active');
     // Show prev/next/today nav on Today and Week screens
     document.getElementById('dayNav').style.display = (screen === 'today' || screen === 'week') ? 'flex' : 'none';
+    updateScheduledTime();
     if (screen === 'today') {
       updateTodayHeader();
       renderAll();
@@ -632,6 +642,7 @@ function shiftCurrentDay(days) {
     updateTodayHeader();
     renderAll();
   }
+  updateScheduledTime();
 }
 
 document.getElementById('prevDay').addEventListener('click', () => {
@@ -650,6 +661,7 @@ document.getElementById('todayBtn').addEventListener('click', () => {
     updateTodayHeader();
     renderAll();
   }
+  updateScheduledTime();
 });
 
 // ============ CALENDAR ============
@@ -764,19 +776,17 @@ function renderCalendar() {
       }
     });
   });
-  checkHeavyLoad();
+  updateScheduledTime();
 }
 
-function checkHeavyLoad() {
+function updateScheduledTime() {
   const events = getEvents(state.currentDay);
   const totalH = events.reduce((s, e) => s + (e.completed ? 0 : e.duration), 0);
-  const banner = document.getElementById('heavyLoad');
-  if (totalH > 8) {
-    banner.textContent = `Heads up: ${formatDuration(totalH)} scheduled today. That's a heavy day — consider deferring something or accepting a slower pace.`;
-    banner.style.display = 'block';
-  } else {
-    banner.style.display = 'none';
-  }
+  const el = document.getElementById('scheduledTime');
+  const numEl = document.getElementById('scheduledTimeNum');
+  if (!el || !numEl) return;
+  numEl.textContent = formatDuration(totalH);
+  if (totalH > 8) el.classList.add('busy'); else el.classList.remove('busy');
 }
 
 function toggleEventComplete(eventId) {
@@ -1701,7 +1711,7 @@ function saveCheckout() {
   showToast('Checked in ✓');
 }
 
-document.getElementById('addQuickBtn').addEventListener('click', () => {
+document.getElementById('inboxAddBtn').addEventListener('click', () => {
   const modal = document.getElementById('modalContent');
   modal.innerHTML = `
     <h3>Quick add</h3>
@@ -1763,8 +1773,12 @@ function autoCatchUp() {
   saveState();
 }
 
+// Always start on actual today
+state.currentDay = new Date();
+saveState();
 autoCatchUp();
 renderAll();
+updateScheduledTime();
 
 // Register service worker for offline support
 if ('serviceWorker' in navigator) {
