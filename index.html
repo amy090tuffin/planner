@@ -53,7 +53,7 @@
   .event {
     background: #d4c5a0; color: #3a3020; border-radius: 8px;
     padding: 6px 28px 6px 10px; margin: 1px 0; font-size: 13px; font-weight: 500;
-    position: relative; touch-action: none;
+    position: relative; touch-action: pan-y;
   }
   .event.cat-work { background: #c4b5d4; color: #2a1f3a; }
   .event.cat-health { background: #b5d4c4; color: #1f3a2a; }
@@ -92,7 +92,7 @@
   .tray-item {
     flex-shrink: 0; background: white; border: 1px solid #ece8de;
     border-radius: 10px; padding: 8px 12px; min-width: 110px; max-width: 160px;
-    font-size: 12px; position: relative; touch-action: none;
+    font-size: 12px; position: relative; touch-action: pan-x;
   }
   .tray-item .label { font-weight: 500; margin-bottom: 2px; line-height: 1.2; }
   .tray-item .meta { font-size: 10px; color: #999; }
@@ -351,7 +351,7 @@ function defaultPresets() {
     { id: 'p_chores',  name: 'Chores',  cat: 'env', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Environment' },
     { id: 'p_garden',  name: 'Gardening', cat: 'env', cadence: 'bi-weekly', days:null, duration: 0.5, time: null, active: true, group: 'Environment' },
     // Personal care — timed
-    { id: 'p_morning', name: 'Morning routine', cat: 'care', cadence: 'all days except Wed & Sun', days:[1,2,4,5,6], duration: 10/60, time: '09:30', active: true, group: 'Personal care', note: 'Brush teeth + skincare' },
+    { id: 'p_morning', name: 'Morning routine', cat: 'care', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 10/60, time: '09:30', active: true, group: 'Personal care', note: 'Brush teeth + skincare' },
     { id: 'p_stretch', name: 'Stretches', cat: 'health', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: '09:00', active: true, group: 'Personal care' },
     { id: 'p_hair',    name: 'Hair wash + style', cat: 'care', cadence: 'Mondays', days:[1], duration: 75/60, time: '20:00', active: true, group: 'Personal care' },
     { id: 'p_moist_m', name: 'Moisturise (Mon)', cat: 'care', cadence: 'Mondays after hair', days:[1], duration: 20/60, time: '21:15', active: true, group: 'Personal care' },
@@ -378,6 +378,7 @@ function defaultPresets() {
 
 // ============ STATE ============
 const LS_KEY = 'planner_state_v1';
+const MIGRATION_KEY = 'planner_migrations_applied';
 let state = loadState();
 
 function loadState() {
@@ -386,6 +387,7 @@ function loadState() {
     if (raw) {
       const s = JSON.parse(raw);
       s.currentDay = new Date(s.currentDay);
+      runMigrations(s);
       return s;
     }
   } catch (e) {}
@@ -401,6 +403,35 @@ function loadState() {
     autoPlacedDates: {},
     lastSeenDate: null
   };
+}
+
+// One-time fixes applied to existing user state. Each migration runs once.
+function runMigrations(s) {
+  const applied = JSON.parse(localStorage.getItem(MIGRATION_KEY) || '[]');
+  const apply = (name, fn) => {
+    if (!applied.includes(name)) { fn(); applied.push(name); }
+  };
+
+  // Fix 1: morning routine should run every day, not exclude Wed & Sun
+  apply('morning_routine_all_days_v1', () => {
+    const p = (s.presets || []).find(x => x.id === 'p_morning');
+    if (p) {
+      p.days = [0,1,2,3,4,5,6];
+      p.cadence = 'daily';
+    }
+    // Clear auto-placed flags so morning routine re-places on Wed/Sun
+    s.autoPlacedDates = {};
+  });
+
+  // Fix 2: undo accidental EOD — clear 'missed' flags on today's events and reset all preset skip streaks
+  apply('undo_accidental_eod_v1', () => {
+    const todayK = dateKey(new Date());
+    const events = (s.eventsByDate && s.eventsByDate[todayK]) || [];
+    events.forEach(ev => { if (ev.missed) delete ev.missed; });
+    (s.presets || []).forEach(p => { p.skipStreak = 0; });
+  });
+
+  localStorage.setItem(MIGRATION_KEY, JSON.stringify(applied));
 }
 
 function saveState() {
@@ -466,6 +497,13 @@ function formatDuration(d) {
 }
 
 // ============ NAVIGATION ============
+function updateTodayHeader() {
+  const todayK = dateKey(new Date());
+  const isToday = dateKey(state.currentDay) === todayK;
+  document.getElementById('headerTitle').textContent = isToday ? 'Today' : DAY_NAMES_FULL[state.currentDay.getDay()];
+  document.getElementById('headerDate').textContent = formatDate(state.currentDay);
+}
+
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     const screen = tab.dataset.screen;
@@ -473,12 +511,12 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById('screen-' + screen).classList.add('active');
-    document.getElementById('headerTitle').textContent = tab.textContent.trim();
     document.getElementById('dayNav').style.display = screen === 'today' ? 'flex' : 'none';
     if (screen === 'today') {
-      document.getElementById('headerDate').textContent = formatDate(state.currentDay);
+      updateTodayHeader();
       renderAll();
     } else {
+      document.getElementById('headerTitle').textContent = tab.textContent.trim();
       const labels = { week: 'This week', inbox: 'Inbox', presets: 'Presets', reflect: 'Weekly reflection' };
       document.getElementById('headerDate').textContent = labels[screen] || '';
       if (screen === 'week') renderWeek();
@@ -491,17 +529,17 @@ document.querySelectorAll('.tab').forEach(tab => {
 
 document.getElementById('prevDay').addEventListener('click', () => {
   state.currentDay = new Date(state.currentDay.getTime() - 86400000);
-  document.getElementById('headerDate').textContent = formatDate(state.currentDay);
+  updateTodayHeader();
   saveState(); renderAll();
 });
 document.getElementById('nextDay').addEventListener('click', () => {
   state.currentDay = new Date(state.currentDay.getTime() + 86400000);
-  document.getElementById('headerDate').textContent = formatDate(state.currentDay);
+  updateTodayHeader();
   saveState(); renderAll();
 });
 document.getElementById('todayBtn').addEventListener('click', () => {
   state.currentDay = new Date();
-  document.getElementById('headerDate').textContent = formatDate(state.currentDay);
+  updateTodayHeader();
   saveState(); renderAll();
 });
 
@@ -784,13 +822,28 @@ function makeTouchDraggable(el, payload, enabled) {
   let dragClone = null;
   let longPressTimer = null;
   let isDragging = false;
+  let scrollDetected = false;
+
+  function cleanup() {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+    if (dragClone) { dragClone.remove(); dragClone = null; }
+    el.style.opacity = '';
+    document.querySelectorAll('.hour-slot').forEach(s => s.classList.remove('drop-target'));
+    touchStart = null;
+    isDragging = false;
+    scrollDetected = false;
+  }
 
   el.addEventListener('touchstart', e => {
     if (e.touches.length !== 1) return;
     const t = e.touches[0];
-    touchStart = { x: t.clientX, y: t.clientY };
+    touchStart = { x: t.clientX, y: t.clientY, time: Date.now() };
+    scrollDetected = false;
+    isDragging = false;
     longPressTimer = setTimeout(() => {
-      // Start drag
+      // Only start drag if user hasn't started scrolling
+      if (scrollDetected || !touchStart) return;
       isDragging = true;
       if (navigator.vibrate) navigator.vibrate(30);
       dragClone = el.cloneNode(true);
@@ -801,7 +854,7 @@ function makeTouchDraggable(el, payload, enabled) {
       dragClone.style.top = (t.clientY - r.height/2) + 'px';
       document.body.appendChild(dragClone);
       el.style.opacity = '0.3';
-    }, 220);
+    }, 350);
   }, { passive: true });
 
   el.addEventListener('touchmove', e => {
@@ -809,21 +862,23 @@ function makeTouchDraggable(el, payload, enabled) {
     const t = e.touches[0];
     const dx = t.clientX - touchStart.x;
     const dy = t.clientY - touchStart.y;
-    // If moved too far before long-press fires, cancel (it's a scroll)
     if (!isDragging) {
-      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+      // Any movement before drag starts = scroll. Cancel the timer.
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+        scrollDetected = true;
         clearTimeout(longPressTimer);
+        longPressTimer = null;
         touchStart = null;
       }
       return;
     }
+    // Dragging — prevent scroll, move clone
     e.preventDefault();
     if (dragClone) {
       const r = el.getBoundingClientRect();
       dragClone.style.left = (t.clientX - r.width/2) + 'px';
       dragClone.style.top = (t.clientY - r.height/2) + 'px';
     }
-    // Highlight slot under finger
     document.querySelectorAll('.hour-slot').forEach(s => s.classList.remove('drop-target'));
     const below = document.elementFromPoint(t.clientX, t.clientY);
     if (below) {
@@ -833,37 +888,55 @@ function makeTouchDraggable(el, payload, enabled) {
   }, { passive: false });
 
   el.addEventListener('touchend', e => {
-    clearTimeout(longPressTimer);
-    if (!isDragging) { touchStart = null; return; }
+    if (!isDragging) { cleanup(); return; }
     const t = e.changedTouches[0];
     const below = document.elementFromPoint(t.clientX, t.clientY);
-    let dropped = false;
     if (below) {
       const slot = below.closest('.hour-slot');
-      if (slot) {
-        handleDrop(payload, parseInt(slot.dataset.hour));
-        dropped = true;
-      }
+      if (slot) handleDrop(payload, parseInt(slot.dataset.hour));
     }
-    if (dragClone) { dragClone.remove(); dragClone = null; }
-    el.style.opacity = '';
-    document.querySelectorAll('.hour-slot').forEach(s => s.classList.remove('drop-target'));
-    touchStart = null;
-    isDragging = false;
+    cleanup();
   });
 
   el.addEventListener('touchcancel', () => {
-    clearTimeout(longPressTimer);
-    if (dragClone) { dragClone.remove(); dragClone = null; }
-    el.style.opacity = '';
-    document.querySelectorAll('.hour-slot').forEach(s => s.classList.remove('drop-target'));
+    cleanup();
     touchStart = null; isDragging = false;
   });
 }
 
 // ============ END OF DAY ============
 function runEndOfDay() {
+  // Confirm first
+  const modal = document.getElementById('modalContent');
+  modal.innerHTML = `
+    <h3>End the day?</h3>
+    <p style="font-size:13px; color:#555; margin: 0 0 12px;">This will:</p>
+    <ul style="font-size:12px; color:#555; margin: 0 0 14px 20px; padding: 0;">
+      <li>Resurface any scheduled-but-incomplete inbox tasks</li>
+      <li>Mark incomplete preset blocks as missed</li>
+      <li>Bump preset skip-streaks for anything not done</li>
+    </ul>
+    <p style="font-size:12px; color:#888; margin: 0 0 14px;">You'll have 30 seconds to undo.</p>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="closeModal(); executeEndOfDay();">Yes, end the day</button>
+    </div>
+  `;
+  document.getElementById('modalBg').classList.add('show');
+}
+
+function executeEndOfDay() {
   const events = getEvents(state.currentDay);
+  // Snapshot for undo
+  const snapshot = {
+    dateKey: dateKey(state.currentDay),
+    timestamp: Date.now(),
+    events: JSON.parse(JSON.stringify(events)),
+    inbox: JSON.parse(JSON.stringify(state.inbox)),
+    presetStreaks: state.presets.map(p => ({ id: p.id, skipStreak: p.skipStreak || 0 }))
+  };
+  state.lastEodSnapshot = snapshot;
+
   let resurfaced = 0;
   let presetMissed = 0;
   state.inbox.forEach(task => {
@@ -877,7 +950,6 @@ function runEndOfDay() {
       }
     }
   });
-  // Bump skip streak for incomplete preset events
   events.forEach(ev => {
     if (ev.presetId && !ev.completed && !ev.missed) {
       const p = state.presets.find(x => x.id === ev.presetId);
@@ -888,15 +960,56 @@ function runEndOfDay() {
       if (p) p.skipStreak = 0;
     }
   });
-  // Age inbox tasks
   state.inbox.forEach(t => { if (!t.scheduledEventId && !t.completed) t.age = (t.age || 0) + 1; });
   saveState();
   renderCalendar(); renderInbox(); renderTray(); renderPresets();
+
   let msg = `End of day. `;
   if (resurfaced) msg += `${resurfaced} task${resurfaced>1?'s':''} resurfaced. `;
   if (presetMissed) msg += `${presetMissed} preset${presetMissed>1?'s':''} skipped.`;
   if (!resurfaced && !presetMissed) msg += `All clear ✓`;
-  showToast(msg.trim());
+  showUndoToast(msg.trim());
+}
+
+function showUndoToast(msg) {
+  // Sticky toast with undo button, 30s window
+  const existing = document.getElementById('undoToast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.id = 'undoToast';
+  t.className = 'toast show';
+  t.style.background = '#2a2a2a';
+  t.innerHTML = `<span>${msg}</span> <button id="undoEodBtn" style="background:#c4b5d4; color:#2a1f3a; border:none; padding:6px 12px; border-radius:14px; font-size:12px; font-weight:600; margin-left:10px; cursor:pointer;">Undo</button>`;
+  document.body.appendChild(t);
+  document.getElementById('undoEodBtn').addEventListener('click', () => {
+    undoEndOfDay();
+    t.remove();
+  });
+  setTimeout(() => {
+    if (document.getElementById('undoToast')) {
+      document.getElementById('undoToast').remove();
+      state.lastEodSnapshot = null;
+      saveState();
+    }
+  }, 30000);
+}
+
+function undoEndOfDay() {
+  const snap = state.lastEodSnapshot;
+  if (!snap) { showToast('Nothing to undo'); return; }
+  // Restore events for that day
+  state.eventsByDate[snap.dateKey] = snap.events;
+  // Restore inbox
+  state.inbox = snap.inbox;
+  // Restore preset skip streaks
+  snap.presetStreaks.forEach(ps => {
+    const p = state.presets.find(x => x.id === ps.id);
+    if (p) p.skipStreak = ps.skipStreak;
+  });
+  state.lastEodSnapshot = null;
+  saveState();
+  renderCalendar(); renderInbox(); renderTray(); renderPresets();
+  showToast('End-of-day undone ✓');
 }
 
 // ============ WEEK VIEW ============
@@ -1338,7 +1451,7 @@ function showToast(msg) {
 
 // ============ INIT ============
 function renderAll() {
-  document.getElementById('headerDate').textContent = formatDate(state.currentDay);
+  updateTodayHeader();
   renderCalendar(); renderTray();
 }
 
