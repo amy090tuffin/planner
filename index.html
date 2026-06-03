@@ -33,9 +33,11 @@
   .day-nav { display: flex; gap: 6px; align-items: center; }
   .day-nav button { background: #f3f0e8; border: none; width: 32px; height: 32px; border-radius: 16px; font-size: 16px; cursor: pointer; color: #6b5b3f; }
 
-  .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; position: relative; }
+  .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; position: relative; min-height: 0; }
   .screen { display: none; min-height: 100%; }
   .screen.active { display: flex; flex-direction: column; }
+  .screen#screen-today.active { height: 100%; overflow: hidden; }
+  .screen#screen-today.active .today-layout { height: 100%; min-height: 0; }
 
   .tabs { display: flex; background: #f3f0e8; border-top: 1px solid #ece8de; flex-shrink: 0; padding: 6px 0 8px; }
   .tab { flex: 1; text-align: center; padding: 4px 0; background: none; border: none; cursor: pointer; font-size: 10px; color: #888; font-weight: 500; min-height: 44px; }
@@ -43,18 +45,26 @@
   .tab.active { color: #6b5b3f; }
 
   /* TODAY */
-  .calendar-area { padding: 0 12px 8px; }
+  .today-layout { display: flex; flex-direction: column; height: 100%; min-height: 100%; }
+  .calendar-area { padding: 0 12px 8px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .hour-row { display: flex; min-height: 56px; border-top: 1px solid #f0ece2; position: relative; }
   .hour-label { width: 48px; font-size: 11px; color: #aaa; padding-top: 4px; flex-shrink: 0; }
-  .hour-slot { flex: 1; min-height: 56px; padding: 2px; position: relative; }
+  .hour-slot { flex: 1; min-height: 56px; padding: 2px; position: relative; cursor: pointer; }
   .hour-slot.drop-target { background: #fff4d6; border-radius: 8px; outline: 2px dashed #c0a060; }
-  .hour-slot.ghost { background: rgba(196, 175, 130, 0.18); border-radius: 8px; cursor: pointer; }
+  .hour-slot:hover { background: rgba(196, 175, 130, 0.08); }
+  .hour-slot.has-events { cursor: default; }
+  .hour-slot.has-events:hover { background: transparent; }
 
   .event {
     background: #d4c5a0; color: #3a3020; border-radius: 8px;
-    padding: 6px 28px 6px 10px; margin: 1px 0; font-size: 13px; font-weight: 500;
-    position: relative; touch-action: pan-y;
+    padding: 4px 28px 4px 10px; margin: 1px 0; font-size: 13px; font-weight: 500;
+    position: relative; touch-action: pan-y; overflow: hidden;
+    box-sizing: border-box;
   }
+  .event.short { padding: 3px 24px 3px 10px; font-size: 11px; line-height: 1.2; }
+  .event.short .cat { display: none; }
+  .event.short .time { font-size: 9px; }
+  .event.short .complete-btn { width: 18px; height: 18px; top: 3px; right: 3px; font-size: 10px; border-width: 1.2px; }
   .event.cat-work { background: #c4b5d4; color: #2a1f3a; }
   .event.cat-health { background: #b5d4c4; color: #1f3a2a; }
   .event.cat-personal { background: #d4c5b5; color: #3a2f1f; }
@@ -80,10 +90,10 @@
   .event.completed .complete-btn::before { content: '✓'; color: #faf8f3; }
   .event.dragging-touch { opacity: 0.9; transform: scale(1.04); box-shadow: 0 8px 20px rgba(0,0,0,0.25); z-index: 1000; position: fixed; pointer-events: none; }
 
-  /* Tray */
-  .tray { background: #f3f0e8; border-top: 1px solid #ece8de; padding: 10px 12px; flex-shrink: 0; max-height: 200px; overflow: hidden; display: flex; flex-direction: column; }
+  /* Tray (top, fixed) */
+  .tray { background: #f3f0e8; border-bottom: 1px solid #ece8de; padding: 8px 12px 6px; flex-shrink: 0; max-height: 160px; overflow: hidden; display: flex; flex-direction: column; }
   .tray-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-  .tray-title { font-size: 11px; font-weight: 600; color: #6b5b3f; text-transform: uppercase; letter-spacing: 0.5px; }
+  .tray-title { font-size: 12px; font-weight: 700; color: #4a3f25; letter-spacing: 0.3px; }
   .tray-tabs { display: flex; gap: 4px; }
   .tray-tab { padding: 4px 10px; background: #e8e3d5; border: none; border-radius: 12px; font-size: 11px; cursor: pointer; color: #6b5b3f; min-height: 28px; }
   .tray-tab.active { background: #6b5b3f; color: #faf8f3; }
@@ -106,12 +116,18 @@
   .tray-item.cat-create { border-left: 3px solid #6888b8; }
   .tray-item .age { font-size: 9px; color: #c08040; font-weight: 600; margin-top: 2px; }
   .tray-item.dragging-touch { opacity: 0.9; transform: scale(1.08); box-shadow: 0 8px 20px rgba(0,0,0,0.25); z-index: 1000; position: fixed; pointer-events: none; }
+  .tray-item.allocated { opacity: 0.5; background: #f3f0e8; cursor: pointer; }
+  .tray-item.allocated .label { text-decoration: line-through; }
+  .tray-item.allocated .allocated-tag { font-size: 9px; color: #6b5b3f; font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tray-item-close { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border: none; background: transparent; color: #aaa; cursor: pointer; font-size: 14px; line-height: 1; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .tray-item-close:hover { background: rgba(0,0,0,0.06); color: #c04040; }
+  .tray-item { padding-right: 24px; }
 
-  .checkout-prompt { background: linear-gradient(135deg, #f9f3e3 0%, #f0ece2 100%); border-radius: 14px; padding: 12px 14px; margin: 12px; }
-  .checkout-prompt h4 { margin: 0 0 4px; font-size: 13px; color: #4a3f25; }
-  .checkout-prompt p { margin: 0 0 8px; font-size: 11px; color: #888; }
-  .checkout-prompt button { background: #6b5b3f; color: #faf8f3; border: none; padding: 6px 12px; border-radius: 8px; font-size: 11px; cursor: pointer; min-height: 32px; }
-  .checkout-prompt .row { display: flex; gap: 8px; align-items: center; }
+  .checkout-prompt { background: linear-gradient(135deg, #f9f3e3 0%, #f0ece2 100%); border-top: 1px solid #ece8de; padding: 10px 12px; flex-shrink: 0; }
+  .checkout-prompt h4 { margin: 0 0 2px; font-size: 13px; color: #4a3f25; }
+  .checkout-prompt p { margin: 0; font-size: 11px; color: #888; }
+  .checkout-prompt button { background: #6b5b3f; color: #faf8f3; border: none; padding: 8px 12px; border-radius: 8px; font-size: 11px; cursor: pointer; min-height: 36px; white-space: nowrap; }
+  .checkout-prompt .row { display: flex; gap: 10px; align-items: center; }
   .checkout-prompt .row > div { cursor: pointer; flex: 1; }
 
   /* WEEK */
@@ -243,26 +259,28 @@
 
     <!-- TODAY -->
     <div class="screen active" id="screen-today">
-      <div class="heavy-load-warning" id="heavyLoad" style="display:none;"></div>
-      <div class="checkout-prompt">
-        <div class="row">
-          <div onclick="openCheckout()">
-            <h4>30-second day close-out →</h4>
-            <p>Energy, mood, one-line note.</p>
+      <div class="today-layout">
+        <div class="tray">
+          <div class="tray-header">
+            <div class="tray-title">Plan my day</div>
+            <div class="tray-tabs">
+              <button class="tray-tab active" data-tray="presets">Presets</button>
+              <button class="tray-tab" data-tray="inbox">Inbox</button>
+            </div>
           </div>
-          <button onclick="runEndOfDay()">⏰ End of day</button>
+          <div class="tray-scroll" id="trayScroll"></div>
         </div>
-      </div>
-      <div class="calendar-area" id="calendarArea"></div>
-      <div class="tray">
-        <div class="tray-header">
-          <div class="tray-title">Drag onto today</div>
-          <div class="tray-tabs">
-            <button class="tray-tab active" data-tray="presets">Presets</button>
-            <button class="tray-tab" data-tray="inbox">Inbox</button>
+        <div class="heavy-load-warning" id="heavyLoad" style="display:none;"></div>
+        <div class="calendar-area" id="calendarArea"></div>
+        <div class="checkout-prompt">
+          <div class="row">
+            <div onclick="openCheckout()">
+              <h4>30-second day close-out →</h4>
+              <p>Energy, mood, one-line note.</p>
+            </div>
+            <button onclick="runEndOfDay()">⏰ End of day</button>
           </div>
         </div>
-        <div class="tray-scroll" id="trayScroll"></div>
       </div>
     </div>
 
@@ -371,8 +389,13 @@ function defaultPresets() {
     { id: 'p_jobapp',  name: 'Job application', cat: 'work', cadence: 'weekdays', days:[1,2,3,4,5], duration: 40/60, time: null, active: true, group: 'Admin' },
     { id: 'p_portfolio', name: 'Portfolio', cat: 'work', cadence: 'weekdays', days:[1,2,3,4,5], duration: 1, time: null, active: true, group: 'Admin' },
     // Creativity & Relaxation
-    { id: 'p_read',    name: 'Reading', cat: 'create', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 1, time: null, active: true, group: 'Creativity & Relaxation' },
+    { id: 'p_read_am', name: 'Reading (am)', cat: 'create', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Creativity & Relaxation' },
+    { id: 'p_read_pm', name: 'Reading (pm)', cat: 'create', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Creativity & Relaxation' },
     { id: 'p_screen',  name: 'Screenplay', cat: 'create', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 1, time: null, active: true, group: 'Creativity & Relaxation' },
+    { id: 'p_creative', name: 'Creativity', cat: 'create', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Creativity & Relaxation' },
+    // Work (additional)
+    { id: 'p_cook',    name: 'Cooking', cat: 'work', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 45/60, time: null, active: true, group: 'Admin' },
+    { id: 'p_home',    name: 'Home improvements', cat: 'work', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Admin' },
   ];
 }
 
@@ -431,6 +454,41 @@ function runMigrations(s) {
     (s.presets || []).forEach(p => { p.skipStreak = 0; });
   });
 
+  // Fix 3: split Reading into am/pm and add Creativity, Cooking, Home improvements presets
+  apply('split_reading_add_presets_v1', () => {
+    if (!s.presets) s.presets = [];
+    const oldRead = s.presets.find(p => p.id === 'p_read');
+    if (oldRead) {
+      // Replace with two half-hour blocks, preserving active state
+      const wasActive = oldRead.active !== false;
+      s.presets = s.presets.filter(p => p.id !== 'p_read');
+      s.presets.push({ id: 'p_read_am', name: 'Reading (am)', cat: 'create', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: wasActive, group: 'Creativity & Relaxation' });
+      s.presets.push({ id: 'p_read_pm', name: 'Reading (pm)', cat: 'create', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: wasActive, group: 'Creativity & Relaxation' });
+    } else {
+      // No old reading preset — ensure the new ones exist
+      if (!s.presets.find(p => p.id === 'p_read_am')) {
+        s.presets.push({ id: 'p_read_am', name: 'Reading (am)', cat: 'create', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Creativity & Relaxation' });
+      }
+      if (!s.presets.find(p => p.id === 'p_read_pm')) {
+        s.presets.push({ id: 'p_read_pm', name: 'Reading (pm)', cat: 'create', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Creativity & Relaxation' });
+      }
+    }
+    if (!s.presets.find(p => p.id === 'p_creative')) {
+      s.presets.push({ id: 'p_creative', name: 'Creativity', cat: 'create', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Creativity & Relaxation' });
+    }
+    if (!s.presets.find(p => p.id === 'p_cook')) {
+      s.presets.push({ id: 'p_cook', name: 'Cooking', cat: 'work', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 45/60, time: null, active: true, group: 'Admin' });
+    }
+    if (!s.presets.find(p => p.id === 'p_home')) {
+      s.presets.push({ id: 'p_home', name: 'Home improvements', cat: 'work', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Admin' });
+    }
+  });
+
+  // Fix 4: initialise skipDates field on every preset (per-day skip tracking)
+  apply('init_skip_dates_v1', () => {
+    (s.presets || []).forEach(p => { if (!p.skipDates) p.skipDates = []; });
+  });
+
   localStorage.setItem(MIGRATION_KEY, JSON.stringify(applied));
 }
 
@@ -457,6 +515,7 @@ function autoPlaceTimedPresets(date) {
   state.presets.forEach(p => {
     if (!p.active || !p.time) return;
     if (!p.days || !p.days.includes(dow)) return;
+    if ((p.skipDates || []).includes(key)) return;
     // Don't duplicate
     if (events.some(e => e.presetId === p.id)) return;
     const [h, m] = p.time.split(':').map(Number);
@@ -548,6 +607,7 @@ function renderCalendar() {
   autoPlaceTimedPresets(state.currentDay);
   const area = document.getElementById('calendarArea');
   area.innerHTML = '';
+  const HOUR_PX = 56;
   for (let h = 8; h <= 23; h++) {
     const row = document.createElement('div');
     row.className = 'hour-row';
@@ -555,12 +615,31 @@ function renderCalendar() {
     area.appendChild(row);
   }
   const events = getEvents(state.currentDay);
+  // Track which slots have events so we can disable tap-to-add on them
+  const slotsWithEvents = new Set();
   events.forEach(ev => {
-    const slot = area.querySelector(`.hour-slot[data-hour="${Math.floor(ev.hour)}"]`);
+    const startHour = Math.floor(ev.hour);
+    const slot = area.querySelector(`.hour-slot[data-hour="${startHour}"]`);
     if (slot) {
+      slotsWithEvents.add(startHour);
       const eventEl = document.createElement('div');
-      eventEl.className = 'event cat-' + ev.cat + (ev.completed ? ' completed' : '') + (ev.missed ? ' missed' : '');
+      const isShort = ev.duration < 0.5;
+      eventEl.className = 'event cat-' + ev.cat
+        + (ev.completed ? ' completed' : '')
+        + (ev.missed ? ' missed' : '')
+        + (isShort ? ' short' : '');
       eventEl.dataset.id = ev.id;
+      // Proportional height: duration*56px, minimum 28px. Subtract 2px margin so it fits inside.
+      const naturalH = ev.duration * HOUR_PX;
+      const height = Math.max(28, naturalH) - 2;
+      // Offset from top of hour-slot if event starts mid-hour
+      const minutesOffset = (ev.hour - startHour) * HOUR_PX;
+      eventEl.style.position = 'absolute';
+      eventEl.style.left = '2px';
+      eventEl.style.right = '2px';
+      eventEl.style.top = (minutesOffset + 1) + 'px';
+      eventEl.style.height = height + 'px';
+      eventEl.style.zIndex = '2';
       const noteIndicator = ev.note ? ' 📝' : '';
       eventEl.innerHTML = `
         <button class="complete-btn" data-event-id="${ev.id}" aria-label="Mark complete"></button>
@@ -573,10 +652,15 @@ function renderCalendar() {
         if (ev.missed) { showToast('Event missed — already back in inbox'); return; }
         toggleEventComplete(ev.id);
       });
-      eventEl.addEventListener('click', () => openEventModal(ev.id));
+      eventEl.addEventListener('click', e => { e.stopPropagation(); openEventModal(ev.id); });
       makeTouchDraggable(eventEl, {type: 'event', id: ev.id}, !ev.completed && !ev.missed);
       slot.appendChild(eventEl);
     }
+  });
+  // Mark slots that have events
+  slotsWithEvents.forEach(h => {
+    const slot = area.querySelector(`.hour-slot[data-hour="${h}"]`);
+    if (slot) slot.classList.add('has-events');
   });
   // Now line if viewing today
   const now = new Date();
@@ -589,13 +673,13 @@ function renderCalendar() {
       if (slot) {
         const line = document.createElement('div');
         line.className = 'now-line';
-        line.style.top = (m / 60 * 56) + 'px';
+        line.style.top = (m / 60 * HOUR_PX) + 'px';
         slot.style.position = 'relative';
         slot.appendChild(line);
       }
     }
   }
-  // Drop targets
+  // Drop targets + tap-to-add
   area.querySelectorAll('.hour-slot').forEach(slot => {
     slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('drop-target'); });
     slot.addEventListener('dragleave', () => slot.classList.remove('drop-target'));
@@ -606,6 +690,13 @@ function renderCalendar() {
         const data = JSON.parse(e.dataTransfer.getData('text/plain'));
         handleDrop(data, parseInt(slot.dataset.hour));
       } catch(err) {}
+    });
+    // Tap on empty area of hour slot opens new-event modal
+    slot.addEventListener('click', e => {
+      // Only fire if the click target IS the slot itself (not bubbled from an event)
+      if (e.target === slot) {
+        openNewEventModal(parseInt(slot.dataset.hour));
+      }
     });
   });
   checkHeavyLoad();
@@ -694,6 +785,56 @@ function handleDrop(data, hour) {
   renderTray();
 }
 
+// ============ NEW EVENT MODAL (tap empty hour) ============
+function openNewEventModal(hour) {
+  const modal = document.getElementById('modalContent');
+  const dateLabel = formatDate(state.currentDay);
+  const timeStr = String(hour).padStart(2,'0') + ':00';
+  modal.innerHTML = `
+    <h3>New event</h3>
+    <div style="font-size:12px; color:#888; margin-bottom:10px;">${dateLabel}</div>
+    <label>What is it?</label>
+    <input type="text" id="neTitle" placeholder="e.g. Call with Sarah" autofocus>
+    <label>Category</label>
+    <select id="neCat">${Object.entries(CAT_LABELS).map(([k,v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+    <label>Time</label>
+    <input type="time" id="neTime" value="${timeStr}">
+    <label>Duration (minutes)</label>
+    <input type="number" id="neDur" value="30" min="5" step="5">
+    <label>Notes (optional)</label>
+    <textarea id="neNote"></textarea>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveNewEvent()">Add</button>
+    </div>
+  `;
+  document.getElementById('modalBg').classList.add('show');
+  setTimeout(() => { const el = document.getElementById('neTitle'); if (el) el.focus(); }, 50);
+}
+
+function saveNewEvent() {
+  const title = document.getElementById('neTitle').value.trim();
+  if (!title) { showToast('Add a title'); return; }
+  const cat = document.getElementById('neCat').value;
+  const t = document.getElementById('neTime').value || '09:00';
+  const [h, m] = t.split(':').map(Number);
+  const dur = parseInt(document.getElementById('neDur').value);
+  if (!dur || dur < 5) { showToast('Duration too short'); return; }
+  const note = document.getElementById('neNote').value.trim();
+  const events = getEvents(state.currentDay);
+  events.push({
+    id: 'e_' + Date.now(),
+    title, cat,
+    hour: h + m/60,
+    duration: dur / 60,
+    note, completed: false
+  });
+  saveState();
+  closeModal();
+  renderCalendar();
+  showToast(`"${title}" added at ${formatHour(h + m/60)}`);
+}
+
 // ============ EVENT MODAL (notes, edit, delete) ============
 function openEventModal(eventId) {
   const events = getEvents(state.currentDay);
@@ -761,41 +902,126 @@ function deleteEvent(eventId) {
 }
 
 // ============ TRAY ============
+function isPresetSkippedToday(p) {
+  const k = dateKey(state.currentDay);
+  return (p.skipDates || []).includes(k);
+}
+
+function isPresetAllocatedToday(p) {
+  const events = getEvents(state.currentDay);
+  return events.some(e => e.presetId === p.id);
+}
+
 function renderTray() {
   const scroll = document.getElementById('trayScroll');
   scroll.innerHTML = '';
   const dow = state.currentDay.getDay();
-  let items;
   if (state.trayMode === 'presets') {
-    // Show only DRAGGABLE presets (no fixed time) that are active and apply today
-    items = state.presets.filter(p => p.active && !p.time && (!p.days || p.days.includes(dow)));
-  } else {
-    items = state.inbox.filter(i => !i.scheduledEventId && !i.completed);
-  }
-  if (items.length === 0) {
-    scroll.innerHTML = `<div style="color:#aaa; font-size:12px; padding:8px;">${state.trayMode === 'presets' ? 'No draggable presets for today.' : 'Inbox empty. Tap + to add a task.'}</div>`;
-    return;
-  }
-  items.forEach(item => {
-    const el = document.createElement('div');
-    el.className = 'tray-item cat-' + item.cat;
-    if (state.trayMode === 'presets') {
-      el.innerHTML = `
-        <div class="label">${item.name}</div>
-        <div class="meta">${formatDuration(item.duration)} · ${item.cadence}</div>
-        ${item.note ? '<div class="age" style="color:#8b6d3f;">📝 has note</div>' : ''}
-      `;
-      makeTouchDraggable(el, {type: 'preset', id: item.id}, true);
-    } else {
-      el.innerHTML = `
-        <div class="label">${item.label}</div>
-        <div class="meta">${CAT_LABELS[item.cat]} · ${item.age || 0}d old</div>
-        ${item.age >= 14 ? '<div class="age">stale — triage?</div>' : ''}
-      `;
-      makeTouchDraggable(el, {type: 'inbox', id: item.id}, true);
+    // All active draggable presets that apply today, NOT skipped today
+    const all = state.presets.filter(p => p.active && !p.time && (!p.days || p.days.includes(dow)) && !isPresetSkippedToday(p));
+    const available = all.filter(p => !isPresetAllocatedToday(p));
+    const allocated = all.filter(p => isPresetAllocatedToday(p));
+    if (all.length === 0) {
+      scroll.innerHTML = `<div style="color:#aaa; font-size:12px; padding:8px;">No draggable presets for today.</div>`;
+      return;
     }
-    scroll.appendChild(el);
+    available.forEach(item => scroll.appendChild(makePresetTrayItem(item, false)));
+    allocated.forEach(item => scroll.appendChild(makePresetTrayItem(item, true)));
+  } else {
+    const allInbox = state.inbox.filter(i => !i.completed);
+    const available = allInbox.filter(i => !i.scheduledEventId);
+    const allocated = allInbox.filter(i => i.scheduledEventId);
+    if (allInbox.length === 0) {
+      scroll.innerHTML = `<div style="color:#aaa; font-size:12px; padding:8px;">Inbox empty. Tap + to add a task.</div>`;
+      return;
+    }
+    available.forEach(item => scroll.appendChild(makeInboxTrayItem(item, false)));
+    allocated.forEach(item => scroll.appendChild(makeInboxTrayItem(item, true)));
+  }
+}
+
+function makePresetTrayItem(item, allocated) {
+  const el = document.createElement('div');
+  el.className = 'tray-item cat-' + item.cat + (allocated ? ' allocated' : '');
+  el.innerHTML = `
+    <button class="tray-item-close" data-action="skip" aria-label="${allocated ? 'Remove from today' : 'Skip today'}">×</button>
+    <div class="label">${item.name}</div>
+    <div class="meta">${formatDuration(item.duration)} · ${item.cadence}</div>
+    ${allocated ? '<div class="allocated-tag">✓ on today</div>' : (item.note ? '<div class="age" style="color:#8b6d3f;">📝 has note</div>' : '')}
+  `;
+  el.querySelector('[data-action="skip"]').addEventListener('click', e => {
+    e.stopPropagation();
+    if (allocated) {
+      // Remove the scheduled instance(s) from today
+      const events = getEvents(state.currentDay);
+      state.eventsByDate[dateKey(state.currentDay)] = events.filter(ev => ev.presetId !== item.id);
+      saveState();
+      renderCalendar();
+      renderTray();
+      showToast(`"${item.name}" removed from today`);
+    } else {
+      // Skip today: hide from tray, won't auto-place
+      const k = dateKey(state.currentDay);
+      if (!item.skipDates) item.skipDates = [];
+      if (!item.skipDates.includes(k)) item.skipDates.push(k);
+      saveState();
+      renderTray();
+      showToast(`"${item.name}" skipped for today`);
+    }
   });
+  if (allocated) {
+    // Tap to jump to the event on calendar
+    el.addEventListener('click', () => {
+      const events = getEvents(state.currentDay);
+      const ev = events.find(e => e.presetId === item.id);
+      if (ev) openEventModal(ev.id);
+    });
+  } else {
+    makeTouchDraggable(el, {type: 'preset', id: item.id}, true);
+  }
+  return el;
+}
+
+function makeInboxTrayItem(item, allocated) {
+  const el = document.createElement('div');
+  el.className = 'tray-item cat-' + item.cat + (allocated ? ' allocated' : '');
+  el.innerHTML = `
+    <button class="tray-item-close" data-action="delete" aria-label="Delete task">×</button>
+    <div class="label">${item.label}</div>
+    <div class="meta">${CAT_LABELS[item.cat]} · ${item.age || 0}d old</div>
+    ${allocated ? '<div class="allocated-tag">✓ scheduled</div>' : (item.age >= 14 ? '<div class="age">stale — triage?</div>' : '')}
+  `;
+  el.querySelector('[data-action="delete"]').addEventListener('click', e => {
+    e.stopPropagation();
+    // If the task is scheduled, also remove its event from the calendar
+    if (item.scheduledEventId && item.scheduledDate) {
+      const events = state.eventsByDate[item.scheduledDate] || [];
+      state.eventsByDate[item.scheduledDate] = events.filter(ev => ev.id !== item.scheduledEventId);
+    }
+    state.inbox = state.inbox.filter(i => i.id !== item.id);
+    saveState();
+    renderCalendar();
+    renderTray();
+    renderInbox();
+    showToast(`"${item.label}" deleted`);
+  });
+  if (allocated) {
+    el.addEventListener('click', () => {
+      if (item.scheduledDate && item.scheduledDate !== dateKey(state.currentDay)) {
+        // Jump to that day first
+        state.currentDay = new Date(item.scheduledDate + 'T00:00:00');
+        saveState();
+        updateTodayHeader();
+        renderAll();
+      }
+      const events = getEvents(state.currentDay);
+      const ev = events.find(e => e.id === item.scheduledEventId);
+      if (ev) openEventModal(ev.id);
+    });
+  } else {
+    makeTouchDraggable(el, {type: 'inbox', id: item.id}, true);
+  }
+  return el;
 }
 
 document.querySelectorAll('.tray-tab').forEach(tab => {
