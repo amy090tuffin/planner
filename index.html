@@ -47,9 +47,12 @@
   /* TODAY */
   .today-layout { display: flex; flex-direction: column; height: 100%; min-height: 100%; }
   .calendar-area { padding: 0 12px 8px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-  .hour-row { display: flex; min-height: 56px; border-top: 1px solid #f0ece2; position: relative; }
+  .hour-row { display: flex; min-height: 40px; position: relative; }
+  .hour-row.is-hour { border-top: 1px solid #d9d2c2; }
+  .hour-row.is-half { border-top: 1px dashed #ece5d3; }
   .hour-label { width: 48px; font-size: 11px; color: #aaa; padding-top: 4px; flex-shrink: 0; }
-  .hour-slot { flex: 1; min-height: 56px; padding: 2px; position: relative; cursor: pointer; }
+  .hour-label.half { font-size: 10px; color: #c4bda8; }
+  .hour-slot { flex: 1; min-height: 40px; padding: 2px; position: relative; cursor: pointer; display: flex; flex-direction: column; gap: 3px; }
   .hour-slot.drop-target { background: #fff4d6; border-radius: 8px; outline: 2px dashed #c0a060; }
   .hour-slot:hover { background: rgba(196, 175, 130, 0.08); }
   .hour-slot.has-events { cursor: default; }
@@ -126,7 +129,15 @@
   .checkout-prompt .row > div { cursor: pointer; flex: 1; }
 
   /* WEEK */
-  .week-grid { display: grid; grid-template-columns: 36px repeat(7, 1fr); gap: 1px; background: #ece8de; padding: 10px 8px; }
+  .week-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 10px 8px; }
+  .week-scroll::-webkit-scrollbar { height: 6px; }
+  .week-scroll::-webkit-scrollbar-thumb { background: #d4cdb8; border-radius: 3px; }
+  .week-grid { display: grid; grid-template-columns: 36px repeat(7, minmax(54px, 1fr)); gap: 1px; background: #ece8de; min-width: 100%; }
+  @media (orientation: landscape) and (max-width: 900px) {
+    body { padding: 0; }
+    .phone { max-width: 100%; height: 100vh; border-radius: 0; border: none; box-shadow: none; }
+    .week-grid { grid-template-columns: 44px repeat(7, 1fr); }
+  }
   .week-day-header { background: #faf8f3; text-align: center; padding: 6px 1px; font-size: 9px; font-weight: 600; color: #6b5b3f; text-transform: uppercase; cursor: pointer; }
   .week-day-header.today { background: #6b5b3f; color: #faf8f3; border-radius: 4px; }
   .week-day-header .num { font-size: 14px; display: block; margin-top: 1px; }
@@ -281,8 +292,10 @@
 
     <!-- WEEK -->
     <div class="screen" id="screen-week">
-      <div class="week-grid" id="weekGrid"></div>
-      <div style="padding: 0 12px 80px; font-size: 11px; color: #888; text-align: center;">Tap a day to jump to it.</div>
+      <div class="week-scroll">
+        <div class="week-grid" id="weekGrid"></div>
+      </div>
+      <div style="padding: 0 12px 80px; font-size: 11px; color: #888; text-align: center;">Tap a day to jump to it. Use ‹ › to change weeks.</div>
     </div>
 
     <!-- INBOX -->
@@ -558,22 +571,50 @@ function updateTodayHeader() {
   document.getElementById('headerDate').textContent = formatDate(state.currentDay);
 }
 
+let activeScreen = 'today';
+function getActiveScreen() { return activeScreen; }
+
+function updateWeekHeader() {
+  const cur = new Date(state.currentDay);
+  const dayIdx = (cur.getDay() + 6) % 7;
+  const monday = new Date(cur.getTime() - dayIdx * 86400000);
+  const sunday = new Date(monday.getTime() + 6 * 86400000);
+  const todayK = dateKey(new Date());
+  const containsToday = (() => {
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday.getTime() + i * 86400000);
+      if (dateKey(d) === todayK) return true;
+    }
+    return false;
+  })();
+  document.getElementById('headerTitle').textContent = containsToday ? 'This week' : 'Week of';
+  const sameMonth = monday.getMonth() === sunday.getMonth();
+  const range = sameMonth
+    ? `${MONTHS[monday.getMonth()]} ${monday.getDate()}–${sunday.getDate()}`
+    : `${MONTHS[monday.getMonth()]} ${monday.getDate()} – ${MONTHS[sunday.getMonth()]} ${sunday.getDate()}`;
+  document.getElementById('headerDate').textContent = range + ', ' + sunday.getFullYear();
+}
+
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     const screen = tab.dataset.screen;
+    activeScreen = screen;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById('screen-' + screen).classList.add('active');
-    document.getElementById('dayNav').style.display = screen === 'today' ? 'flex' : 'none';
+    // Show prev/next/today nav on Today and Week screens
+    document.getElementById('dayNav').style.display = (screen === 'today' || screen === 'week') ? 'flex' : 'none';
     if (screen === 'today') {
       updateTodayHeader();
       renderAll();
+    } else if (screen === 'week') {
+      updateWeekHeader();
+      renderWeek();
     } else {
       document.getElementById('headerTitle').textContent = tab.textContent.trim();
-      const labels = { week: 'This week', inbox: 'Inbox', presets: 'Presets', reflect: 'Weekly reflection' };
+      const labels = { inbox: 'Inbox', presets: 'Presets', reflect: 'Weekly reflection' };
       document.getElementById('headerDate').textContent = labels[screen] || '';
-      if (screen === 'week') renderWeek();
       if (screen === 'inbox') renderInbox();
       if (screen === 'presets') renderPresets();
       if (screen === 'reflect') renderReflect();
@@ -581,42 +622,76 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
+function shiftCurrentDay(days) {
+  state.currentDay = new Date(state.currentDay.getTime() + days * 86400000);
+  saveState();
+  if (activeScreen === 'week') {
+    updateWeekHeader();
+    renderWeek();
+  } else {
+    updateTodayHeader();
+    renderAll();
+  }
+}
+
 document.getElementById('prevDay').addEventListener('click', () => {
-  state.currentDay = new Date(state.currentDay.getTime() - 86400000);
-  updateTodayHeader();
-  saveState(); renderAll();
+  shiftCurrentDay(activeScreen === 'week' ? -7 : -1);
 });
 document.getElementById('nextDay').addEventListener('click', () => {
-  state.currentDay = new Date(state.currentDay.getTime() + 86400000);
-  updateTodayHeader();
-  saveState(); renderAll();
+  shiftCurrentDay(activeScreen === 'week' ? 7 : 1);
 });
 document.getElementById('todayBtn').addEventListener('click', () => {
   state.currentDay = new Date();
-  updateTodayHeader();
-  saveState(); renderAll();
+  saveState();
+  if (activeScreen === 'week') {
+    updateWeekHeader();
+    renderWeek();
+  } else {
+    updateTodayHeader();
+    renderAll();
+  }
 });
 
 // ============ CALENDAR ============
+// Find the half-hour slot key (hour + 0 or 0.5) closest to a given fractional hour.
+function nearestHalfSlot(hour) {
+  const snapped = Math.round(hour * 2) / 2;
+  // Clamp to visible range
+  if (snapped < 8) return { hour: 8, minute: 0 };
+  if (snapped > 23.5) return { hour: 23, minute: 30 };
+  const intH = Math.floor(snapped);
+  const minute = (snapped - intH) >= 0.5 ? 30 : 0;
+  return { hour: intH, minute };
+}
+
 function renderCalendar() {
   autoPlaceTimedPresets(state.currentDay);
   const area = document.getElementById('calendarArea');
   area.innerHTML = '';
-  const HOUR_PX = 56;
+  const SLOT_PX = 40;
+  // Render two slots per hour: HH:00 and HH:30
   for (let h = 8; h <= 23; h++) {
-    const row = document.createElement('div');
-    row.className = 'hour-row';
-    row.innerHTML = `<div class="hour-label">${formatHour(h)}</div><div class="hour-slot" data-hour="${h}"></div>`;
-    area.appendChild(row);
+    for (const minute of [0, 30]) {
+      const row = document.createElement('div');
+      row.className = 'hour-row ' + (minute === 0 ? 'is-hour' : 'is-half');
+      const labelText = minute === 0
+        ? formatHour(h)
+        : '';
+      const labelClass = minute === 0 ? 'hour-label' : 'hour-label half';
+      row.innerHTML = `<div class="${labelClass}">${labelText}</div><div class="hour-slot" data-hour="${h}" data-minute="${minute}"></div>`;
+      area.appendChild(row);
+    }
   }
   const events = getEvents(state.currentDay);
+  // Sort by start time so events within the same slot stack in chronological order
+  const sortedEvents = events.slice().sort((a, b) => a.hour - b.hour);
   // Track which slots have events so we can disable tap-to-add on them
   const slotsWithEvents = new Set();
-  events.forEach(ev => {
-    const startHour = Math.floor(ev.hour);
-    const slot = area.querySelector(`.hour-slot[data-hour="${startHour}"]`);
+  sortedEvents.forEach(ev => {
+    const place = nearestHalfSlot(ev.hour);
+    const slot = area.querySelector(`.hour-slot[data-hour="${place.hour}"][data-minute="${place.minute}"]`);
     if (slot) {
-      slotsWithEvents.add(startHour);
+      slotsWithEvents.add(place.hour + ':' + place.minute);
       const eventEl = document.createElement('div');
       eventEl.className = 'event cat-' + ev.cat
         + (ev.completed ? ' completed' : '')
@@ -640,8 +715,9 @@ function renderCalendar() {
     }
   });
   // Mark slots that have events
-  slotsWithEvents.forEach(h => {
-    const slot = area.querySelector(`.hour-slot[data-hour="${h}"]`);
+  slotsWithEvents.forEach(key => {
+    const [h, m] = key.split(':');
+    const slot = area.querySelector(`.hour-slot[data-hour="${h}"][data-minute="${m}"]`);
     if (slot) slot.classList.add('has-events');
   });
   // Now line if viewing today
@@ -651,11 +727,14 @@ function renderCalendar() {
     const h = now.getHours();
     const m = now.getMinutes();
     if (h >= 8 && h <= 23) {
-      const slot = area.querySelector(`.hour-slot[data-hour="${h}"]`);
+      const minute = m >= 30 ? 30 : 0;
+      const slot = area.querySelector(`.hour-slot[data-hour="${h}"][data-minute="${minute}"]`);
       if (slot) {
         const line = document.createElement('div');
         line.className = 'now-line';
-        line.style.top = (m / 60 * HOUR_PX) + 'px';
+        // Position within the half-hour slot (each slot covers 30 mins)
+        const minsIntoSlot = m - minute;
+        line.style.top = (minsIntoSlot / 30 * SLOT_PX) + 'px';
         slot.style.position = 'relative';
         slot.appendChild(line);
       }
@@ -670,14 +749,18 @@ function renderCalendar() {
       slot.classList.remove('drop-target');
       try {
         const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-        handleDrop(data, parseInt(slot.dataset.hour));
+        const baseHour = parseInt(slot.dataset.hour);
+        const minute = parseInt(slot.dataset.minute);
+        handleDrop(data, baseHour + minute / 60);
       } catch(err) {}
     });
-    // Tap on empty area of hour slot opens new-event modal
+    // Tap on empty area of slot opens new-event modal
     slot.addEventListener('click', e => {
       // Only fire if the click target IS the slot itself (not bubbled from an event)
       if (e.target === slot) {
-        openNewEventModal(parseInt(slot.dataset.hour));
+        const baseHour = parseInt(slot.dataset.hour);
+        const minute = parseInt(slot.dataset.minute);
+        openNewEventModal(baseHour + minute / 60);
       }
     });
   });
@@ -771,7 +854,9 @@ function handleDrop(data, hour) {
 function openNewEventModal(hour) {
   const modal = document.getElementById('modalContent');
   const dateLabel = formatDate(state.currentDay);
-  const timeStr = String(hour).padStart(2,'0') + ':00';
+  const intH = Math.floor(hour);
+  const mins = Math.round((hour - intH) * 60);
+  const timeStr = String(intH).padStart(2,'0') + ':' + String(mins).padStart(2,'0');
   modal.innerHTML = `
     <h3>New event</h3>
     <div style="font-size:12px; color:#888; margin-bottom:10px;">${dateLabel}</div>
@@ -1101,7 +1186,11 @@ function makeTouchDraggable(el, payload, enabled) {
     const below = document.elementFromPoint(t.clientX, t.clientY);
     if (below) {
       const slot = below.closest('.hour-slot');
-      if (slot) handleDrop(payload, parseInt(slot.dataset.hour));
+      if (slot) {
+        const baseHour = parseInt(slot.dataset.hour);
+        const frac = computeSnappedFraction(slot, t.clientY);
+        handleDrop(payload, baseHour + frac);
+      }
     }
     cleanup();
   });
