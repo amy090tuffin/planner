@@ -859,23 +859,19 @@ function renderCalendar() {
 }
 
 // Scroll the calendar so the red 'now' line is centered in the visible area.
-// Only meaningful when viewing today; otherwise scrolls to a sensible morning slot.
 function scrollToNow() {
   const content = document.querySelector('.content');
   if (!content) return;
-  // Defer so the just-rendered calendar has real layout.
   requestAnimationFrame(() => {
     const now = new Date();
     const isToday = dateKey(now) === dateKey(state.currentDay);
     let target = content.querySelector('.now-line');
     if (!isToday || !target) {
-      // Fall back to 9am slot when not viewing today (no red line exists).
       target = content.querySelector('.hour-slot[data-hour="9"][data-minute="0"]');
     }
     if (!target) return;
     const contentRect = content.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
-    // Position target roughly 1/3 from the top of the viewport.
     const offset = (targetRect.top - contentRect.top) - (content.clientHeight / 3);
     content.scrollTop = Math.max(0, content.scrollTop + offset);
   });
@@ -1848,4 +1844,47 @@ function addInbox() {
 }
 
 function closeModal() { document.getElementById('modalBg').classList.remove('show'); }
-document.getElementById('modalBg').addEventListener('click', e => { if (e.target.id === 'modalBg') cl
+document.getElementById('modalBg').addEventListener('click', e => { if (e.target.id === 'modalBg') closeModal(); });
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ============ INIT ============
+function renderAll() {
+  updateTodayHeader();
+  renderCalendar(); renderTray();
+}
+
+// Auto-run end-of-day catch-up on first load each day
+function autoCatchUp() {
+  const todayK = dateKey(new Date());
+  if (state.lastSeenDate && state.lastSeenDate !== todayK) {
+    // Bump age for inbox tasks not scheduled
+    state.inbox.forEach(t => { if (!t.scheduledEventId && !t.completed) t.age = (t.age || 0) + 1; });
+  }
+  state.lastSeenDate = todayK;
+  saveState();
+}
+
+// Always start on actual today
+state.currentDay = new Date();
+saveState();
+autoCatchUp();
+renderAll();
+updateScheduledTime();
+scrollToNow();
+
+// Register service worker for offline support
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed:', err));
+  });
+}
+</script>
+</body>
+</html>
