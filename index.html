@@ -57,9 +57,8 @@
 
   .event {
     background: #d4c5a0; color: #3a3020; border-radius: 8px;
-    padding: 4px 28px 4px 10px; margin: 1px 0; font-size: 13px; font-weight: 500;
-    position: relative; touch-action: pan-y; overflow: hidden;
-    box-sizing: border-box;
+    padding: 6px 28px 6px 10px; margin: 1px 0; font-size: 13px; font-weight: 500;
+    position: relative; touch-action: pan-y;
   }
   .event.cat-work { background: #c4b5d4; color: #2a1f3a; }
   .event.cat-health { background: #b5d4c4; color: #1f3a2a; }
@@ -623,17 +622,6 @@ function renderCalendar() {
         + (ev.completed ? ' completed' : '')
         + (ev.missed ? ' missed' : '');
       eventEl.dataset.id = ev.id;
-      // Proportional height: duration*56px, minimum 28px. Subtract 2px margin so it fits inside.
-      const naturalH = ev.duration * HOUR_PX;
-      const height = Math.max(28, naturalH) - 2;
-      // Offset from top of hour-slot if event starts mid-hour
-      const minutesOffset = (ev.hour - startHour) * HOUR_PX;
-      eventEl.style.position = 'absolute';
-      eventEl.style.left = '2px';
-      eventEl.style.right = '2px';
-      eventEl.style.top = (minutesOffset + 1) + 'px';
-      eventEl.style.height = height + 'px';
-      eventEl.style.zIndex = '2';
       const noteIndicator = ev.note ? ' 📝' : '';
       eventEl.innerHTML = `
         <button class="complete-btn" data-event-id="${ev.id}" aria-label="Mark complete"></button>
