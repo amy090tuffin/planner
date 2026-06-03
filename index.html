@@ -1188,8 +1188,8 @@ function makeTouchDraggable(el, payload, enabled) {
       const slot = below.closest('.hour-slot');
       if (slot) {
         const baseHour = parseInt(slot.dataset.hour);
-        const frac = computeSnappedFraction(slot, t.clientY);
-        handleDrop(payload, baseHour + frac);
+        const minute = parseInt(slot.dataset.minute) || 0;
+        handleDrop(payload, baseHour + minute / 60);
       }
     }
     cleanup();
