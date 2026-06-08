@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planner Export</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; background: #faf8f2; color: #3a3326; margin: 0; padding: 24px; }
+  h1 { font-size: 20px; }
+  .card { background: #fff; border: 1px solid #ece8de; border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+  button { background: #6b5b3f; color: #fff; border: none; padding: 14px 18px; border-radius: 10px; font-size: 15px; cursor: pointer; width: 100%; margin-top: 8px; }
+  button.secondary { background: #efeadf; color: #3a3326; }
+  .muted { color: #8a7f68; font-size: 13px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; margin-top: 12px; }
+  th, td { border: 1px solid #ece8de; padding: 6px 8px; text-align: left; }
+  th { background: #f5f1e7; }
+  .err { color: #b04030; }
+  .count { font-weight: 600; }
+</style>
+</head>
+<body>
+  <h1>Planner Export</h1>
+  <div class="card" id="status">Reading your planner data…</div>
+  <div class="card">
+    <button id="csvBtn">Download CSV (opens in Excel)</button>
+    <button id="jsonBtn" class="secondary">Download full JSON backup</button>
+    <p class="muted">The CSV lists every preset, ad-hoc inbox entry, and scheduled event, with time, category, group and type.</p>
+  </div>
+  <div class="card" id="preview"></div>
+
+<script>
+const LS_KEY = 'planner_state_v1';
+
+const CAT_LABELS = {
+  housework: 'Housework', grooming: 'Grooming', fitness: 'Fitness', admin: 'Admin',
+  social: 'Social', career: 'Career', creativity: 'Creativity', relaxation: 'Relaxation', appt: 'Appointment'
+};
+// Legacy codes -> new (so an export still reads correctly if migration hasn't run yet)
+const CAT_MIGRATION = {
+  env: 'housework', care: 'grooming', health: 'fitness', work: 'career',
+  create: 'creativity', personal: 'grooming'
+};
+
+function catLabel(c) { const k = CAT_LABELS[c] ? c : (CAT_MIGRATION[c] || c); return CAT_LABELS[k] || (c || ''); }
+
+// preset.time is "HH:MM" or null; event.hour is a float like 20.5
+function fmtClock(time) {
+  if (!time) return '';
+  return time;
+}
+function fmtHour(hourFloat) {
+  if (hourFloat == null || isNaN(hourFloat)) return '';
+  const h = Math.floor(hourFloat);
+  const m = Math.round((hourFloat - h) * 60);
+  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+}
+function fmtDur(d) {
+  if (d == null) return '';
+  const mins = Math.round(d * 60);
+  if (mins < 60) return mins + ' min';
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
+
+function buildRows(state) {
+  const rows = [];
+
+  // 1. Presets
+  (state.presets || []).forEach(p => {
+    rows.push({
+      type: 'preset',
+      name: p.name || '',
+      category: catLabel(p.cat),
+      group: p.group || catLabel(p.cat),
+      time: fmtClock(p.time),
+      date: '',
+      duration: fmtDur(p.duration),
+      cadence: p.cadence || '',
+      active: p.active === false ? 'no' : 'yes',
+      note: p.note || ''
+    });
+  });
+
+  // 2. Ad-hoc inbox entries (no group field -> fall back to category label)
+  (state.inbox || []).forEach(i => {
+    rows.push({
+      type: 'ad-hoc (inbox)',
+      name: i.label || '',
+      category: catLabel(i.cat),
+      group: catLabel(i.cat),
+      time: '',
+      date: '',
+      duration: fmtDur(i.duration),
+      cadence: '',
+      active: 'yes',
+      note: i.note || ''
+    });
+  });
+
+  // 3. Scheduled event instances by date
+  const ebd = state.eventsByDate || {};
+  Object.keys(ebd).sort().forEach(dateKey => {
+    (ebd[dateKey] || []).forEach(ev => {
+      // derive group from matching preset if available
+      let group = catLabel(ev.cat);
+      if (ev.presetId && state.presets) {
+        const src = state.presets.find(p => p.id === ev.presetId);
+        if (src && src.group) group = src.group;
+      }
+      const evType = ev.presetId ? 'scheduled (from preset)'
+                   : ev.inboxId ? 'scheduled (from ad-hoc)'
+                   : 'scheduled';
+      rows.push({
+        type: evType,
+        name: ev.title || '',
+        category: catLabel(ev.cat),
+        group: group,
+        time: fmtHour(ev.hour),
+        date: dateKey,
+        duration: fmtDur(ev.duration),
+        cadence: '',
+        active: ev.completed ? 'completed' : 'yes',
+        note: ev.note || ''
+      });
+    });
+  });
+
+  return rows;
+}
+
+const COLS = ['type','name','category','group','time','date','duration','cadence','active','note'];
+
+function toCSV(rows) {
+  const esc = v => {
+    const s = String(v == null ? '' : v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const header = COLS.join(',');
+  const body = rows.map(r => COLS.map(c => esc(r[c])).join(',')).join('\n');
+  return '﻿' + header + '\n' + body; // BOM so Excel reads UTF-8
+}
+
+function download(filename, text, mime) {
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+
+let STATE = null, ROWS = [];
+
+function init() {
+  const statusEl = document.getElementById('status');
+  const previewEl = document.getElementById('preview');
+  let raw;
+  try { raw = localStorage.getItem(LS_KEY); } catch (e) { raw = null; }
+
+  if (!raw) {
+    statusEl.innerHTML = '<span class="err">No planner data found in this browser.</span>' +
+      '<p class="muted">This means the data is stored under a different site/origin. Open this page from the <b>same address you open your planner</b> (same domain), then reload.</p>';
+    return;
+  }
+  try {
+    STATE = JSON.parse(raw);
+  } catch (e) {
+    statusEl.innerHTML = '<span class="err">Found data but could not parse it: ' + e.message + '</span>';
+    return;
+  }
+
+  ROWS = buildRows(STATE);
+  const counts = ROWS.reduce((a, r) => { a[r.type] = (a[r.type]||0)+1; return a; }, {});
+  const summary = Object.entries(counts).map(([k,v]) => `${k}: <span class="count">${v}</span>`).join(' &nbsp;·&nbsp; ');
+  statusEl.innerHTML = `Found <span class="count">${ROWS.length}</span> entries.<br><span class="muted">${summary || 'none'}</span>`;
+
+  // preview first 30 rows
+  const head = '<tr>' + COLS.map(c => `<th>${c}</th>`).join('') + '</tr>';
+  const body = ROWS.slice(0, 30).map(r => '<tr>' + COLS.map(c => `<td>${(r[c]??'').toString().replace(/</g,'&lt;')}</td>`).join('') + '</tr>').join('');
+  previewEl.innerHTML = '<div class="muted">Preview (first 30 rows):</div><table>' + head + body + '</table>';
+}
+
+document.getElementById('csvBtn').addEventListener('click', () => {
+  if (!ROWS.length) { alert('No data to export.'); return; }
+  const stamp = new Date().toISOString().slice(0,10);
+  download(`planner-export-${stamp}.csv`, toCSV(ROWS), 'text/csv;charset=utf-8');
+});
+document.getElementById('jsonBtn').addEventListener('click', () => {
+  if (!STATE) { alert('No data to export.'); return; }
+  const stamp = new Date().toISOString().slice(0,10);
+  download(`planner-backup-${stamp}.json`, JSON.stringify(STATE, null, 2), 'application/json');
+});
+
+init();
+</script>
+</body>
+</html>

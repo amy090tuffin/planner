@@ -1,3 +1,7 @@
+https://raw.githubusercontent.com/amy090tuffin/planner/main/index.html
+→ https://raw.githubusercontent.com/amy090tuffin/planner/main/index.html
+Content-Type: text/plain; charset=utf-8
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -58,35 +62,26 @@
   .hour-row.is-half { border-top: 1px dashed #ece5d3; }
   .hour-label { width: 48px; font-size: 11px; color: #aaa; padding-top: 4px; flex-shrink: 0; }
   .hour-label.half { font-size: 10px; color: #c4bda8; }
-  .hour-slot { flex: 1; min-height: 40px; padding: 2px; position: relative; cursor: pointer; display: flex; flex-direction: column; gap: 3px; overflow: visible; }
+  .hour-slot { flex: 1; min-height: 40px; padding: 2px; position: relative; cursor: pointer; display: flex; flex-direction: column; gap: 3px; }
   .hour-slot.drop-target { background: #fff4d6; border-radius: 8px; outline: 2px dashed #c0a060; }
   .hour-slot:hover { background: rgba(196, 175, 130, 0.08); }
   .hour-slot.has-events { cursor: default; }
   .hour-slot.has-events:hover { background: transparent; }
-  /* Slots visually owned by an expanded event above them */
-  .hour-slot.covered { cursor: default; }
-  .hour-slot.covered:hover { background: transparent; }
 
   .event {
     background: #d4c5a0; color: #3a3020; border-radius: 8px;
     padding: 6px 28px 6px 10px; margin: 1px 0; font-size: 13px; font-weight: 500;
     position: relative; touch-action: pan-y;
   }
-  /* Sized events use absolute positioning so they can overflow their origin slot
-     without affecting the grid layout (each row stays at 40px). */
-  .event.sized {
-    position: absolute; left: 2px; right: 2px; top: 2px;
-    margin: 0; z-index: 2; overflow: hidden;
-  }
-  .event.cat-work { background: #c4b5d4; color: #2a1f3a; }
-  .event.cat-health { background: #b5d4c4; color: #1f3a2a; }
-  .event.cat-personal { background: #d4c5b5; color: #3a2f1f; }
+  .event.cat-career { background: #c4b5d4; color: #2a1f3a; }
+  .event.cat-fitness { background: #b5d4c4; color: #1f3a2a; }
   .event.cat-social { background: #d4b5c4; color: #3a1f2a; }
   .event.cat-appt { background: #b5c4d4; color: #1f2a3a; }
-  .event.cat-env { background: #c4d4b5; color: #2a3a1f; }
-  .event.cat-care { background: #e0c8b8; color: #3a2820; }
+  .event.cat-housework { background: #c4d4b5; color: #2a3a1f; }
+  .event.cat-grooming { background: #e0c8b8; color: #3a2820; }
   .event.cat-admin { background: #c8c4b8; color: #2a2820; }
-  .event.cat-create { background: #b8c8d8; color: #1f2838; }
+  .event.cat-creativity { background: #b8c8d8; color: #1f2838; }
+  .event.cat-relaxation { background: #d4c8e0; color: #281f38; }
   .event .time { font-size: 10px; opacity: 0.7; }
   .event .cat { font-size: 9px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; }
   .event .note-icon { font-size: 10px; margin-left: 4px; opacity: 0.8; }
@@ -119,14 +114,14 @@
   }
   .tray-item .label { font-weight: 500; margin-bottom: 2px; line-height: 1.2; }
   .tray-item .meta { font-size: 10px; color: #999; }
-  .tray-item.cat-work { border-left: 3px solid #8b6db8; }
-  .tray-item.cat-health { border-left: 3px solid #5b9b7b; }
-  .tray-item.cat-personal { border-left: 3px solid #b89668; }
+  .tray-item.cat-career { border-left: 3px solid #8b6db8; }
+  .tray-item.cat-fitness { border-left: 3px solid #5b9b7b; }
   .tray-item.cat-social { border-left: 3px solid #b86888; }
-  .tray-item.cat-env { border-left: 3px solid #6b9b6b; }
-  .tray-item.cat-care { border-left: 3px solid #b88868; }
+  .tray-item.cat-housework { border-left: 3px solid #6b9b6b; }
+  .tray-item.cat-grooming { border-left: 3px solid #b88868; }
   .tray-item.cat-admin { border-left: 3px solid #888868; }
-  .tray-item.cat-create { border-left: 3px solid #6888b8; }
+  .tray-item.cat-creativity { border-left: 3px solid #6888b8; }
+  .tray-item.cat-relaxation { border-left: 3px solid #9b7bb5; }
   .tray-item .age { font-size: 9px; color: #c08040; font-weight: 600; margin-top: 2px; }
   .tray-item.dragging-touch { opacity: 0.9; transform: scale(1.08); box-shadow: 0 8px 20px rgba(0,0,0,0.25); z-index: 1000; position: fixed; pointer-events: none; }
   .tray-item.allocated { opacity: 0.5; background: #f3f0e8; cursor: pointer; }
@@ -159,14 +154,14 @@
   .week-hour-label { background: #faf8f3; font-size: 8px; color: #aaa; padding: 2px 1px; text-align: right; }
   .week-cell { background: #faf8f3; min-height: 26px; padding: 1px; position: relative; cursor: pointer; }
   .week-event { border-radius: 3px; padding: 1px 2px; font-size: 8px; font-weight: 500; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .week-event.cat-work { background: #c4b5d4; }
-  .week-event.cat-health { background: #b5d4c4; }
-  .week-event.cat-personal { background: #d4c5b5; }
+  .week-event.cat-career { background: #c4b5d4; }
+  .week-event.cat-fitness { background: #b5d4c4; }
   .week-event.cat-social { background: #d4b5c4; }
-  .week-event.cat-env { background: #c4d4b5; }
-  .week-event.cat-care { background: #e0c8b8; }
+  .week-event.cat-housework { background: #c4d4b5; }
+  .week-event.cat-grooming { background: #e0c8b8; }
   .week-event.cat-admin { background: #c8c4b8; }
-  .week-event.cat-create { background: #b8c8d8; }
+  .week-event.cat-creativity { background: #b8c8d8; }
+  .week-event.cat-relaxation { background: #d4c8e0; }
   .week-event.cat-appt { background: #b5c4d4; }
 
   /* INBOX */
@@ -174,14 +169,14 @@
   .inbox-section { margin-bottom: 20px; }
   .inbox-section h3 { font-size: 11px; font-weight: 600; color: #6b5b3f; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 8px; }
   .inbox-item { background: white; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; border: 1px solid #ece8de; display: flex; align-items: center; gap: 10px; }
-  .inbox-item.cat-work { border-left: 4px solid #8b6db8; }
-  .inbox-item.cat-health { border-left: 4px solid #5b9b7b; }
-  .inbox-item.cat-personal { border-left: 4px solid #b89668; }
+  .inbox-item.cat-career { border-left: 4px solid #8b6db8; }
+  .inbox-item.cat-fitness { border-left: 4px solid #5b9b7b; }
   .inbox-item.cat-social { border-left: 4px solid #b86888; }
-  .inbox-item.cat-env { border-left: 4px solid #6b9b6b; }
-  .inbox-item.cat-care { border-left: 4px solid #b88868; }
+  .inbox-item.cat-housework { border-left: 4px solid #6b9b6b; }
+  .inbox-item.cat-grooming { border-left: 4px solid #b88868; }
   .inbox-item.cat-admin { border-left: 4px solid #888868; }
-  .inbox-item.cat-create { border-left: 4px solid #6888b8; }
+  .inbox-item.cat-creativity { border-left: 4px solid #6888b8; }
+  .inbox-item.cat-relaxation { border-left: 4px solid #9b7bb5; }
   .inbox-item .label { font-size: 14px; font-weight: 500; }
   .inbox-item .meta { font-size: 11px; color: #999; margin-top: 2px; }
   .inbox-item.stale { background: #fdf6e9; }
@@ -268,10 +263,10 @@
       <h1 id="headerTitle">Today</h1>
       <div class="date" id="headerDate">—</div>
     </div>
-    <div class="day-nav" id="dayNav" style="display:flex;">
-      <button id="prevDay" aria-label="Previous day">‹</button>
-      <button id="todayBtn" aria-label="Jump to today">●</button>
-      <button id="nextDay" aria-label="Next day">›</button>
+    <div class="day-nav" id="dayNav" style="display:none;">
+      <button id="prevDay">‹</button>
+      <button id="todayBtn">●</button>
+      <button id="nextDay">›</button>
     </div>
     <div class="scheduled-time" id="scheduledTime" title="Scheduled time today">
       <span class="num" id="scheduledTimeNum">0h</span>
@@ -357,6 +352,12 @@
           <input type="text" id="intent3" placeholder="And one more (optional)…">
           <button class="btn-primary" onclick="saveIntents()" style="margin-top: 4px; padding: 10px 16px; border-radius: 8px; border: none; font-size: 13px; cursor: pointer;">Save intentions</button>
         </div>
+        <div class="reflect-card">
+          <h3>Nightly close-out reminder</h3>
+          <div style="font-size:12px; color:#888; margin-bottom:10px;">A gentle nudge at 11pm each night to do your 30-second close-out.</div>
+          <div id="reminderStatus" style="font-size:13px; margin-bottom:10px;"></div>
+          <button class="btn-primary" id="reminderBtn" onclick="toggleReminder()" style="padding: 10px 16px; border-radius: 8px; border: none; font-size: 13px; cursor: pointer;">Enable 11pm reminder</button>
+        </div>
       </div>
     </div>
 
@@ -377,13 +378,20 @@
 <script>
 // ============ CONSTANTS ============
 const CAT_LABELS = {
-  env: 'Environment', care: 'Personal care', admin: 'Admin', create: 'Creativity',
-  work: 'Work', health: 'Health', personal: 'Personal', social: 'Social', appt: 'Appointment'
+  housework: 'Housework', grooming: 'Grooming', fitness: 'Fitness', admin: 'Admin',
+  social: 'Social', career: 'Career', creativity: 'Creativity', relaxation: 'Relaxation', appt: 'Appointment'
 };
 const CAT_COLORS = {
-  env: '#6b9b6b', care: '#b88868', admin: '#888868', create: '#6888b8',
-  work: '#8b6db8', health: '#5b9b7b', personal: '#b89668', social: '#b86888', appt: '#688bb8'
+  housework: '#6b9b6b', grooming: '#b88868', fitness: '#5b9b7b', admin: '#888868',
+  social: '#b86888', career: '#8b6db8', creativity: '#6888b8', relaxation: '#9b7bb5', appt: '#688bb8'
 };
+const CAT_MIGRATION = {
+  env: 'housework', care: 'grooming', health: 'fitness', work: 'career',
+  create: 'creativity', personal: 'grooming'
+};
+function catCode(c) { return CAT_LABELS[c] ? c : (CAT_MIGRATION[c] || c); }
+function catLabel(c) { const k = catCode(c); return CAT_LABELS[k] || c || ''; }
+function catColor(c) { const k = catCode(c); return CAT_COLORS[k] || '#999'; }
 const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const DAY_NAMES_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -392,36 +400,36 @@ const MONTHS = ['January','February','March','April','May','June','July','August
 function defaultPresets() {
   return [
     // Environment
-    { id: 'p_chores',  name: 'Chores',  cat: 'env', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Environment' },
-    { id: 'p_garden',  name: 'Gardening', cat: 'env', cadence: 'bi-weekly', days:null, duration: 0.5, time: null, active: true, group: 'Environment' },
+    { id: 'p_chores',  name: 'Chores',  cat: 'housework', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Environment' },
+    { id: 'p_garden',  name: 'Gardening', cat: 'housework', cadence: 'bi-weekly', days:null, duration: 0.5, time: null, active: true, group: 'Environment' },
     // Personal care — timed
-    { id: 'p_morning', name: 'Morning routine', cat: 'care', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 10/60, time: '09:30', active: true, group: 'Personal care', note: 'Brush teeth + skincare' },
-    { id: 'p_stretch', name: 'Stretches', cat: 'health', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: '09:00', active: true, group: 'Personal care' },
-    { id: 'p_hair',    name: 'Hair wash + style', cat: 'care', cadence: 'Mondays', days:[1], duration: 75/60, time: '20:00', active: true, group: 'Personal care' },
-    { id: 'p_moist_m', name: 'Moisturise (Mon)', cat: 'care', cadence: 'Mondays after hair', days:[1], duration: 20/60, time: '21:15', active: true, group: 'Personal care' },
-    { id: 'p_shave',   name: 'Shave', cat: 'care', cadence: 'Thursdays', days:[4], duration: 0.5, time: '20:00', active: true, group: 'Personal care' },
-    { id: 'p_groom',   name: 'Grooming', cat: 'care', cadence: 'Thursdays', days:[4], duration: 10/60, time: '20:30', active: true, group: 'Personal care' },
-    { id: 'p_moist_t', name: 'Moisturise (Thu)', cat: 'care', cadence: 'Thursdays after shave', days:[4], duration: 20/60, time: '20:40', active: true, group: 'Personal care' },
-    { id: 'p_evening', name: 'Evening routine', cat: 'care', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 10/60, time: '22:30', active: true, group: 'Personal care', note: 'Brush teeth + skincare. Wed & Sun: use whitener instead of toothpaste' },
-    { id: 'p_foot',    name: 'Footcare', cat: 'care', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 5/60, time: '22:40', active: true, group: 'Personal care' },
+    { id: 'p_morning', name: 'Morning routine', cat: 'grooming', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 10/60, time: '09:30', active: true, group: 'Personal care', note: 'Brush teeth + skincare' },
+    { id: 'p_stretch', name: 'Stretches', cat: 'fitness', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: '09:00', active: true, group: 'Personal care' },
+    { id: 'p_hair',    name: 'Haircare', cat: 'grooming', cadence: 'Mondays', days:[1], duration: 75/60, time: '20:00', active: true, group: 'Personal care' },
+    { id: 'p_moist_m', name: 'Moisturise (Mon)', cat: 'grooming', cadence: 'Mondays after hair', days:[1], duration: 20/60, time: '21:15', active: true, group: 'Personal care' },
+    { id: 'p_shave',   name: 'Shave', cat: 'grooming', cadence: 'Thursdays', days:[4], duration: 0.5, time: '20:00', active: true, group: 'Personal care' },
+    { id: 'p_groom',   name: 'Personal care', cat: 'grooming', cadence: 'Thursdays', days:[4], duration: 10/60, time: '20:30', active: true, group: 'Personal care' },
+    { id: 'p_moist_t', name: 'Moisturise (Thu)', cat: 'grooming', cadence: 'Thursdays after shave', days:[4], duration: 20/60, time: '20:40', active: true, group: 'Personal care' },
+    { id: 'p_evening', name: 'Evening routine', cat: 'grooming', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 10/60, time: '22:30', active: true, group: 'Personal care', note: 'Brush teeth + skincare. Wed & Sun: use whitener instead of toothpaste' },
+    { id: 'p_foot',    name: 'Footcare', cat: 'grooming', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 5/60, time: '22:40', active: true, group: 'Personal care' },
     // Personal care — draggable
-    { id: 'p_workout', name: 'Workout', cat: 'health', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Personal care' },
-    { id: 'p_filenails', name: 'File nails', cat: 'care', cadence: 'Fridays', days:[5], duration: 0.5, time: null, active: true, group: 'Personal care' },
+    { id: 'p_workout', name: 'Workout', cat: 'fitness', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Personal care' },
+    { id: 'p_filenails', name: 'File nails', cat: 'grooming', cadence: 'Fridays', days:[5], duration: 0.5, time: null, active: true, group: 'Personal care' },
     // Admin
     { id: 'p_admin',   name: 'Admin', cat: 'admin', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 20/60, time: null, active: true, group: 'Admin' },
     { id: 'p_corr1',   name: 'Correspondence (am)', cat: 'admin', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 5/60, time: null, active: true, group: 'Admin' },
     { id: 'p_corr2',   name: 'Correspondence (pm)', cat: 'admin', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 5/60, time: null, active: true, group: 'Admin' },
     { id: 'p_mum',     name: 'Call Mum', cat: 'social', cadence: 'Tue & Fri', days:[2,5], duration: 1, time: '19:30', active: true, group: 'Admin' },
-    { id: 'p_jobapp',  name: 'Job application', cat: 'work', cadence: 'weekdays', days:[1,2,3,4,5], duration: 40/60, time: null, active: true, group: 'Admin' },
-    { id: 'p_portfolio', name: 'Portfolio', cat: 'work', cadence: 'weekdays', days:[1,2,3,4,5], duration: 1, time: null, active: true, group: 'Admin' },
+    { id: 'p_jobapp',  name: 'Application', cat: 'career', cadence: 'weekdays', days:[1,2,3,4,5], duration: 40/60, time: null, active: true, group: 'Admin' },
+    { id: 'p_portfolio', name: 'Portfolio', cat: 'career', cadence: 'weekdays', days:[1,2,3,4,5], duration: 1, time: null, active: true, group: 'Admin' },
     // Creativity & Relaxation
-    { id: 'p_read_am', name: 'Reading (am)', cat: 'create', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Creativity & Relaxation' },
-    { id: 'p_read_pm', name: 'Reading (pm)', cat: 'create', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Creativity & Relaxation' },
-    { id: 'p_screen',  name: 'Screenplay', cat: 'create', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 1, time: null, active: true, group: 'Creativity & Relaxation' },
-    { id: 'p_creative', name: 'Creativity', cat: 'create', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Creativity & Relaxation' },
+    { id: 'p_read_am', name: 'Reading (am)', cat: 'relaxation', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Creativity' },
+    { id: 'p_read_pm', name: 'Reading (pm)', cat: 'relaxation', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Creativity' },
+    { id: 'p_screen',  name: 'Screenplay', cat: 'creativity', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 1, time: null, active: true, group: 'Creativity' },
+    { id: 'p_creative', name: 'Arts & crafts', cat: 'creativity', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Creativity' },
     // Work (additional)
-    { id: 'p_cook',    name: 'Cooking', cat: 'work', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 45/60, time: null, active: true, group: 'Admin' },
-    { id: 'p_home',    name: 'Home improvements', cat: 'work', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Admin' },
+    { id: 'p_cook',    name: 'Cooking', cat: 'housework', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 45/60, time: null, active: true, group: 'Environment' },
+    { id: 'p_home',    name: 'Home improvements', cat: 'housework', cadence: 'daily', days:[0,1,2,3,4,5,6], duration: 0.5, time: null, active: true, group: 'Environment' },
   ];
 }
 
@@ -513,6 +521,34 @@ function runMigrations(s) {
   // Fix 4: initialise skipDates field on every preset (per-day skip tracking)
   apply('init_skip_dates_v1', () => {
     (s.presets || []).forEach(p => { if (!p.skipDates) p.skipDates = []; });
+  });
+
+  // Fix 5: recategorise to new category scheme (Housework/Grooming/Fitness/Career/
+  // Creativity/Relaxation/Social/Admin) + align group headings and a few renames.
+  // Recategorise-only: does NOT add new presets or split Reading.
+  apply('recategorise_v2', () => {
+    const remapCat = c => CAT_MIGRATION[c] || c;
+    (s.presets || []).forEach(p => { p.cat = remapCat(p.cat); });
+    (s.inbox || []).forEach(i => { i.cat = remapCat(i.cat); });
+    const ebd = s.eventsByDate || {};
+    Object.keys(ebd).forEach(k => (ebd[k] || []).forEach(ev => { ev.cat = remapCat(ev.cat); }));
+    const overrides = {
+      p_hair:     { name: 'Haircare' },
+      p_groom:    { name: 'Personal care' },
+      p_jobapp:   { name: 'Application' },
+      p_creative: { name: 'Arts & crafts' },
+      p_mum:      { cat: 'social' },
+      p_read_am:  { cat: 'relaxation', group: 'Creativity' },
+      p_read_pm:  { cat: 'relaxation', group: 'Creativity' },
+      p_screen:   { group: 'Creativity' },
+      p_cook:     { cat: 'housework', group: 'Environment' },
+      p_home:     { cat: 'housework', group: 'Environment' },
+    };
+    (s.presets || []).forEach(p => {
+      const o = overrides[p.id];
+      if (o) Object.assign(p, o);
+      if (p.group === 'Creativity & Relaxation') p.group = 'Creativity';
+    });
   });
 
   localStorage.setItem(MIGRATION_KEY, JSON.stringify(applied));
@@ -627,7 +663,6 @@ document.querySelectorAll('.tab').forEach(tab => {
     if (screen === 'today') {
       updateTodayHeader();
       renderAll();
-      scrollToNow();
     } else if (screen === 'week') {
       updateWeekHeader();
       renderWeek();
@@ -707,25 +742,22 @@ function renderCalendar() {
   const events = getEvents(state.currentDay);
   // Sort by start time so events within the same slot stack in chronological order
   const sortedEvents = events.slice().sort((a, b) => a.hour - b.hour);
-  // Track which slots have events so we can disable tap-to-add on them.
-  // Also remember the rendered event element(s) per slot so we can post-process for sizing.
+  // Track which slots have events so we can disable tap-to-add on them
   const slotsWithEvents = new Set();
-  const slotEventEls = new Map(); // "h:m" -> [{el, ev}]
   sortedEvents.forEach(ev => {
     const place = nearestHalfSlot(ev.hour);
     const slot = area.querySelector(`.hour-slot[data-hour="${place.hour}"][data-minute="${place.minute}"]`);
     if (slot) {
-      const key = place.hour + ':' + place.minute;
-      slotsWithEvents.add(key);
+      slotsWithEvents.add(place.hour + ':' + place.minute);
       const eventEl = document.createElement('div');
-      eventEl.className = 'event cat-' + ev.cat
+      eventEl.className = 'event cat-' + catCode(ev.cat)
         + (ev.completed ? ' completed' : '')
         + (ev.missed ? ' missed' : '');
       eventEl.dataset.id = ev.id;
       const noteIndicator = ev.note ? ' 📝' : '';
       eventEl.innerHTML = `
         <button class="complete-btn" data-event-id="${ev.id}" aria-label="Mark complete"></button>
-        <div class="cat">${CAT_LABELS[ev.cat]}${ev.inboxId ? ' · inbox' : ''}${ev.presetId ? ' · preset' : ''}</div>
+        <div class="cat">${catLabel(ev.cat)}${ev.inboxId ? ' · inbox' : ''}${ev.presetId ? ' · preset' : ''}</div>
         <div>${ev.title}${noteIndicator}</div>
         <div class="time">${formatHour(ev.hour)} · ${formatDuration(ev.duration)}</div>
       `;
@@ -737,8 +769,6 @@ function renderCalendar() {
       eventEl.addEventListener('click', e => { e.stopPropagation(); openEventModal(ev.id); });
       makeTouchDraggable(eventEl, {type: 'event', id: ev.id}, !ev.completed && !ev.missed);
       slot.appendChild(eventEl);
-      if (!slotEventEls.has(key)) slotEventEls.set(key, []);
-      slotEventEls.get(key).push({el: eventEl, ev});
     }
   });
   // Mark slots that have events
@@ -746,64 +776,6 @@ function renderCalendar() {
     const [h, m] = key.split(':');
     const slot = area.querySelector(`.hour-slot[data-hour="${h}"][data-minute="${m}"]`);
     if (slot) slot.classList.add('has-events');
-  });
-
-  // === Proportional event heights ===
-  // Each 30-min slot is SLOT_PX (40px). Rules:
-  //   - Only events alone in their slot can resize.
-  //   - Long events (>30 min) expand downward into consecutive empty slots,
-  //     never overlapping another event. Partial spill into the last empty
-  //     slot is allowed (e.g. 45 min spills halfway into the next empty slot).
-  //   - Short events (<30 min) shrink proportionally, with a floor so the
-  //     title + chip + complete button stay readable.
-  //   - Sized events become position:absolute so the grid stays uniform 40px.
-  const SHORT_FLOOR_PX = 32;
-  const FULL_GAP = 2;
-  function isSlotEmpty(h, m) {
-    if (h > 23) return false;
-    return !slotsWithEvents.has(h + ':' + m);
-  }
-  slotEventEls.forEach((entries, key) => {
-    if (entries.length !== 1) return; // skip stacked slots
-    const {el, ev} = entries[0];
-    if (ev.missed) return; // missed events use the dashed-border default style
-    const [hStr, mStr] = key.split(':');
-    const startH = parseInt(hStr), startM = parseInt(mStr);
-    const durationMin = Math.max(1, Math.round(ev.duration * 60));
-    let heightPx = null;
-    if (durationMin > 30) {
-      // Walk forward 30-min steps while each next slot is empty.
-      let availableMin = 30;
-      let h = startH, m = startM;
-      while (availableMin < durationMin) {
-        m += 30;
-        if (m >= 60) { m = 0; h += 1; }
-        if (!isSlotEmpty(h, m)) break;
-        availableMin += 30;
-      }
-      const usableMin = Math.min(durationMin, availableMin);
-      heightPx = (usableMin / 30) * SLOT_PX - FULL_GAP;
-    } else if (durationMin < 30) {
-      const proportional = (durationMin / 30) * SLOT_PX - FULL_GAP;
-      heightPx = Math.max(SHORT_FLOOR_PX, proportional);
-    }
-    if (heightPx !== null) {
-      el.classList.add('sized');
-      el.style.height = heightPx + 'px';
-      // Flag covered slots so they ignore taps/drops/hover.
-      if (durationMin > 30) {
-        let coveredMin = 30;
-        let h = startH, m = startM;
-        while (coveredMin < durationMin) {
-          m += 30;
-          if (m >= 60) { m = 0; h += 1; }
-          if (!isSlotEmpty(h, m)) break;
-          const coveredSlot = area.querySelector(`.hour-slot[data-hour="${h}"][data-minute="${m}"]`);
-          if (coveredSlot) coveredSlot.classList.add('covered');
-          coveredMin += 30;
-        }
-      }
-    }
   });
   // Now line if viewing today
   const now = new Date();
@@ -825,18 +797,13 @@ function renderCalendar() {
       }
     }
   }
-  // Drop targets + tap-to-add. Covered slots (visually owned by an expanded
-  // event above them) are inert: no hover, no tap-to-add, no drop.
+  // Drop targets + tap-to-add
   area.querySelectorAll('.hour-slot').forEach(slot => {
-    slot.addEventListener('dragover', e => {
-      if (slot.classList.contains('covered')) return;
-      e.preventDefault(); slot.classList.add('drop-target');
-    });
+    slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('drop-target'); });
     slot.addEventListener('dragleave', () => slot.classList.remove('drop-target'));
     slot.addEventListener('drop', e => {
       e.preventDefault();
       slot.classList.remove('drop-target');
-      if (slot.classList.contains('covered')) return;
       try {
         const data = JSON.parse(e.dataTransfer.getData('text/plain'));
         const baseHour = parseInt(slot.dataset.hour);
@@ -848,7 +815,6 @@ function renderCalendar() {
     slot.addEventListener('click', e => {
       // Only fire if the click target IS the slot itself (not bubbled from an event)
       if (e.target === slot) {
-        if (slot.classList.contains('covered')) return;
         const baseHour = parseInt(slot.dataset.hour);
         const minute = parseInt(slot.dataset.minute);
         openNewEventModal(baseHour + minute / 60);
@@ -858,38 +824,9 @@ function renderCalendar() {
   updateScheduledTime();
 }
 
-// Scroll the calendar so the red 'now' line is centered in the visible area.
-// On Today the scroller is .calendar-area; elsewhere it is .content.
-function scrollToNow() {
-  const doScroll = () => {
-    const calArea = document.querySelector('.calendar-area');
-    const content = document.querySelector('.content');
-    const now = new Date();
-    const isToday = dateKey(now) === dateKey(state.currentDay);
-    // On Today, .calendar-area is the scroller. Always use it when present.
-    const scroller = (calArea && document.getElementById('screen-today')?.classList.contains('active')) ? calArea : content;
-    if (!scroller) return;
-    let target = scroller.querySelector('.now-line');
-    if (!isToday || !target) {
-      target = scroller.querySelector('.hour-slot[data-hour="9"][data-minute="0"]');
-    }
-    if (!target) return;
-    const sRect = scroller.getBoundingClientRect();
-    const tRect = target.getBoundingClientRect();
-    const h = scroller.clientHeight || 400;
-    const offset = (tRect.top - sRect.top) - (h / 3);
-    scroller.scrollTop = Math.max(0, scroller.scrollTop + offset);
-  };
-  // Try immediately (sync after render) AND after two frames (in case layout is still pending).
-  doScroll();
-  requestAnimationFrame(() => requestAnimationFrame(doScroll));
-  // Also after a 100ms tick as belt-and-braces for slow devices.
-  setTimeout(doScroll, 100);
-}
-
 function updateScheduledTime() {
   const events = getEvents(state.currentDay);
-  const totalH = events.reduce((s, e) => s + e.duration, 0);
+  const totalH = events.reduce((s, e) => s + (e.completed ? 0 : e.duration), 0);
   const el = document.getElementById('scheduledTime');
   const numEl = document.getElementById('scheduledTimeNum');
   if (!el || !numEl) return;
@@ -1028,7 +965,7 @@ function openEventModal(eventId) {
   const modal = document.getElementById('modalContent');
   modal.innerHTML = `
     <h3>${ev.title}</h3>
-    <div style="font-size:12px; color:#888; margin-bottom:10px;">${CAT_LABELS[ev.cat]} · ${formatHour(ev.hour)} · ${formatDuration(ev.duration)}</div>
+    <div style="font-size:12px; color:#888; margin-bottom:10px;">${catLabel(ev.cat)} · ${formatHour(ev.hour)} · ${formatDuration(ev.duration)}</div>
     <label>Notes</label>
     <textarea id="eventNote" placeholder="Add notes for this task…">${ev.note || ''}</textarea>
     <label>Time</label>
@@ -1127,7 +1064,7 @@ function renderTray() {
 
 function makePresetTrayItem(item, allocated) {
   const el = document.createElement('div');
-  el.className = 'tray-item cat-' + item.cat + (allocated ? ' allocated' : '');
+  el.className = 'tray-item cat-' + catCode(item.cat) + (allocated ? ' allocated' : '');
   el.innerHTML = `
     <button class="tray-item-close" data-action="skip" aria-label="${allocated ? 'Remove from today' : 'Skip today'}">×</button>
     <div class="label">${item.name}</div>
@@ -1169,11 +1106,11 @@ function makePresetTrayItem(item, allocated) {
 
 function makeInboxTrayItem(item, allocated) {
   const el = document.createElement('div');
-  el.className = 'tray-item cat-' + item.cat + (allocated ? ' allocated' : '');
+  el.className = 'tray-item cat-' + catCode(item.cat) + (allocated ? ' allocated' : '');
   el.innerHTML = `
     <button class="tray-item-close" data-action="delete" aria-label="Delete task">×</button>
     <div class="label">${item.label}</div>
-    <div class="meta">${CAT_LABELS[item.cat]} · ${item.age || 0}d old</div>
+    <div class="meta">${catLabel(item.cat)} · ${item.age || 0}d old</div>
     ${allocated ? '<div class="allocated-tag">✓ scheduled</div>' : (item.age >= 14 ? '<div class="age">stale — triage?</div>' : '')}
   `;
   el.querySelector('[data-action="delete"]').addEventListener('click', e => {
@@ -1457,7 +1394,7 @@ function renderWeek() {
       const evs = getEvents(d).filter(e => Math.floor(e.hour) === h);
       evs.slice(0, 2).forEach(e => {
         const div = document.createElement('div');
-        div.className = 'week-event cat-' + e.cat;
+        div.className = 'week-event cat-' + catCode(e.cat);
         div.textContent = e.title;
         cell.appendChild(div);
       });
@@ -1503,11 +1440,11 @@ function renderInbox() {
 
 function makeInboxItem(item, isStale) {
   const div = document.createElement('div');
-  div.className = 'inbox-item cat-' + item.cat + (isStale ? ' stale' : '');
+  div.className = 'inbox-item cat-' + catCode(item.cat) + (isStale ? ' stale' : '');
   div.innerHTML = `
     <div style="flex:1;">
       <div class="label">${item.label}${item.note ? ' 📝' : ''}</div>
-      <div class="meta">${CAT_LABELS[item.cat]} · added ${item.age || 0}d ago</div>
+      <div class="meta">${catLabel(item.cat)} · added ${item.age || 0}d ago</div>
     </div>
     <div class="actions">
       <button data-action="edit">Edit</button>
@@ -1591,7 +1528,7 @@ function makePresetItem(p) {
       <div class="preset-name">${p.name}</div>
       <button class="preset-toggle ${p.active ? '' : 'off'}" aria-label="Toggle"></button>
     </div>
-    <div class="preset-meta">${CAT_LABELS[p.cat]} · ${formatDuration(p.duration)}</div>
+    <div class="preset-meta">${catLabel(p.cat)} · ${formatDuration(p.duration)}</div>
     <div class="preset-cadence">↻ ${p.cadence}</div>
     ${p.time ? `<div class="preset-time">⏰ ${formatHour(parseInt(p.time.split(':')[0]) + parseInt(p.time.split(':')[1])/60)} (auto-placed)</div>` : '<div class="preset-time" style="color:#888;">📥 draggable from tray</div>'}
     ${p.note ? `<div class="preset-note">📝 ${p.note}</div>` : ''}
@@ -1618,7 +1555,7 @@ function openPresetModal(presetId) {
     <select id="prCat">${Object.entries(CAT_LABELS).map(([k,v]) => `<option value="${k}" ${p && p.cat===k?'selected':''}>${v}</option>`).join('')}</select>
     <label>Group</label>
     <select id="prGroup">
-      ${['Environment','Personal care','Admin','Creativity & Relaxation','Other'].map(g => `<option ${p && p.group===g?'selected':''}>${g}</option>`).join('')}
+      ${['Environment','Personal care','Admin','Creativity','Other'].map(g => `<option ${p && p.group===g?'selected':''}>${g}</option>`).join('')}
     </select>
     <label>Duration (minutes)</label>
     <input type="number" id="prDur" value="${p ? Math.round(p.duration*60) : 30}" min="5" step="5">
@@ -1701,8 +1638,8 @@ function renderReflect() {
       const pct = (hours / total * 100).toFixed(0);
       bars.innerHTML += `
         <div class="category-bar-row">
-          <div class="name">${CAT_LABELS[cat]}</div>
-          <div class="bar"><div class="fill" style="width:${pct}%; background:${CAT_COLORS[cat]};"></div></div>
+          <div class="name">${catLabel(cat)}</div>
+          <div class="bar"><div class="fill" style="width:${pct}%; background:${catColor(cat)};"></div></div>
           <div class="hours">${formatDuration(hours)}</div>
         </div>`;
     });
@@ -1761,6 +1698,9 @@ function renderReflect() {
     document.getElementById('intent2').value = state.intents[1] || '';
     document.getElementById('intent3').value = state.intents[2] || '';
   }
+
+  // Keep the reminder button/status in sync with current permission + setting
+  if (typeof updateReminderUI === 'function') updateReminderUI();
 }
 
 function saveIntents() {
@@ -1887,13 +1827,111 @@ saveState();
 autoCatchUp();
 renderAll();
 updateScheduledTime();
-scrollToNow();
 
 // Register service worker for offline support
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed:', err));
+    navigator.serviceWorker.register('sw.js')
+      .then(() => { initReminder(); })
+      .catch(err => { console.log('SW registration failed:', err); initReminder(); });
   });
+} else {
+  initReminder();
+}
+
+// ============ NIGHTLY CLOSE-OUT REMINDER (best-effort, client-side) ============
+const REMINDER_HOUR = 23;
+const REMINDER_MINUTE = 0;
+const REMINDER_TITLE = 'Planner';
+const REMINDER_BODY = 'Time for your 30-second close-out.';
+let reminderTimer = null;
+
+function msUntilNextReminder(from) {
+  const now = from ? new Date(from) : new Date();
+  const target = new Date(now);
+  target.setHours(REMINDER_HOUR, REMINDER_MINUTE, 0, 0);
+  if (target.getTime() <= now.getTime()) { target.setDate(target.getDate() + 1); }
+  return target.getTime() - now.getTime();
+}
+
+function notificationsSupported() { return ('Notification' in window); }
+
+function showReminderNow() {
+  const opts = { body: REMINDER_BODY, tag: 'nightly-closeout', icon: 'icon-192.png', badge: 'icon-192.png' };
+  if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+    navigator.serviceWorker.ready
+      .then(reg => reg.showNotification(REMINDER_TITLE, opts))
+      .catch(() => { try { new Notification(REMINDER_TITLE, opts); } catch (e) {} });
+  } else {
+    try { new Notification(REMINDER_TITLE, opts); } catch (e) {}
+  }
+  state.lastReminderShown = dateKey(new Date());
+  saveState();
+}
+
+function scheduleReminder() {
+  if (reminderTimer) { clearTimeout(reminderTimer); reminderTimer = null; }
+  if (!state.reminderEnabled) return;
+  if (!notificationsSupported() || Notification.permission !== 'granted') return;
+  const delay = msUntilNextReminder();
+  reminderTimer = setTimeout(() => { showReminderNow(); scheduleReminder(); }, delay);
+}
+
+function showMissedReminderIfNeeded() {
+  if (!state.reminderEnabled) return;
+  if (!notificationsSupported() || Notification.permission !== 'granted') return;
+  const now = new Date();
+  const todayK = dateKey(now);
+  const past11 = (now.getHours() > REMINDER_HOUR) ||
+                 (now.getHours() === REMINDER_HOUR && now.getMinutes() >= REMINDER_MINUTE);
+  if (past11 && state.lastReminderShown !== todayK) { showReminderNow(); }
+}
+
+function initReminder() {
+  updateReminderUI();
+  if (state.reminderEnabled && notificationsSupported() && Notification.permission === 'granted') {
+    showMissedReminderIfNeeded();
+    scheduleReminder();
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && state.reminderEnabled
+        && notificationsSupported() && Notification.permission === 'granted') {
+      showMissedReminderIfNeeded();
+      scheduleReminder();
+    }
+  });
+}
+
+function toggleReminder() {
+  if (!notificationsSupported()) { updateReminderUI('This browser does not support notifications.'); return; }
+  if (state.reminderEnabled) {
+    state.reminderEnabled = false; saveState();
+    if (reminderTimer) { clearTimeout(reminderTimer); reminderTimer = null; }
+    updateReminderUI(); return;
+  }
+  if (Notification.permission === 'granted') {
+    state.reminderEnabled = true; saveState(); scheduleReminder(); updateReminderUI();
+  } else if (Notification.permission === 'denied') {
+    updateReminderUI('Notifications are blocked. Enable them for this site in your browser settings, then try again.');
+  } else {
+    Notification.requestPermission().then(perm => {
+      if (perm === 'granted') { state.reminderEnabled = true; saveState(); scheduleReminder(); updateReminderUI(); }
+      else { updateReminderUI('Permission not granted - reminder stays off.'); }
+    });
+  }
+}
+
+function updateReminderUI(msg) {
+  const btn = document.getElementById('reminderBtn');
+  const status = document.getElementById('reminderStatus');
+  if (!btn || !status) return;
+  const on = !!state.reminderEnabled && notificationsSupported() && Notification.permission === 'granted';
+  btn.textContent = on ? 'Turn off 11pm reminder' : 'Enable 11pm reminder';
+  if (msg) { status.textContent = msg; status.style.color = '#b04030'; }
+  else if (on) { status.textContent = 'On - you will get a nudge at 11pm each night.'; status.style.color = '#5b9b7b'; }
+  else if (notificationsSupported() && Notification.permission === 'denied') {
+    status.textContent = 'Notifications blocked for this site. Enable in browser settings to use.'; status.style.color = '#b08040';
+  } else { status.textContent = 'Off.'; status.style.color = '#888'; }
 }
 </script>
 </body>
