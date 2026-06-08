@@ -63,11 +63,19 @@
   .hour-slot:hover { background: rgba(196, 175, 130, 0.08); }
   .hour-slot.has-events { cursor: default; }
   .hour-slot.has-events:hover { background: transparent; }
+  .hour-slot.covered { cursor: default; }
+  .hour-slot.covered:hover { background: transparent; }
 
   .event {
     background: #d4c5a0; color: #3a3020; border-radius: 8px;
     padding: 6px 28px 6px 10px; margin: 1px 0; font-size: 13px; font-weight: 500;
     position: relative; touch-action: pan-y;
+  }
+  /* Sized events use absolute positioning so they can overflow their origin slot
+     without affecting the grid layout (each row stays at 40px). */
+  .event.sized {
+    position: absolute; left: 2px; right: 2px; top: 2px;
+    margin: 0; z-index: 2; overflow: hidden;
   }
   .event.cat-career { background: #c4b5d4; color: #2a1f3a; }
   .event.cat-fitness { background: #b5d4c4; color: #1f3a2a; }
@@ -757,6 +765,7 @@ function renderCalendar() {
   const sortedEvents = events.slice().sort((a, b) => a.hour - b.hour);
   // Track which slots have events so we can disable tap-to-add on them
   const slotsWithEvents = new Set();
+  const slotEventEls = new Map();
   sortedEvents.forEach(ev => {
     const place = nearestHalfSlot(ev.hour);
     const slot = area.querySelector(`.hour-slot[data-hour="${place.hour}"][data-minute="${place.minute}"]`);
@@ -782,6 +791,9 @@ function renderCalendar() {
       eventEl.addEventListener('click', e => { e.stopPropagation(); openEventModal(ev.id); });
       makeTouchDraggable(eventEl, {type: 'event', id: ev.id}, !ev.completed && !ev.missed);
       slot.appendChild(eventEl);
+      const slotKey = place.hour + ':' + place.minute;
+      if (!slotEventEls.has(slotKey)) slotEventEls.set(slotKey, []);
+      slotEventEls.get(slotKey).push({el: eventEl, ev});
     }
   });
   // Mark slots that have events
@@ -789,6 +801,63 @@ function renderCalendar() {
     const [h, m] = key.split(':');
     const slot = area.querySelector(`.hour-slot[data-hour="${h}"][data-minute="${m}"]`);
     if (slot) slot.classList.add('has-events');
+  });
+
+  // === Proportional event heights ===
+  // Each 30-min slot is SLOT_PX (40px). Rules:
+  //   - Only events alone in their slot can resize.
+  //   - Long events (>30 min) expand downward into consecutive empty slots
+  //     (no overlap allowed); spill into a partly-available slot is fine.
+  //   - Short events (<30 min) shrink proportionally, down to a readable floor.
+  // Sized events get position:absolute so the grid stays uniform.
+  const SHORT_FLOOR_PX = 32;
+  const FULL_GAP = 2; // matches the slot padding so sized events don't kiss borders
+  function isSlotEmpty(h, m) {
+    if (h > 23) return false;
+    return !slotsWithEvents.has(h + ':' + m);
+  }
+  slotEventEls.forEach((entries, key) => {
+    if (entries.length !== 1) return; // only resize when this slot has a single event
+    const {el, ev} = entries[0];
+    if (ev.missed) return; // missed events keep default style (they get a label)
+    const [hStr, mStr] = key.split(':');
+    const startH = parseInt(hStr), startM = parseInt(mStr);
+    const durationMin = Math.max(1, Math.round(ev.duration * 60));
+    let heightPx = null;
+    if (durationMin > 30) {
+      // How many consecutive empty 30-min slots follow?
+      let availableMin = 30; // own slot
+      let h = startH, m = startM;
+      while (availableMin < durationMin) {
+        m += 30;
+        if (m >= 60) { m = 0; h += 1; }
+        if (!isSlotEmpty(h, m)) break;
+        availableMin += 30;
+      }
+      const usableMin = Math.min(durationMin, availableMin);
+      heightPx = (usableMin / 30) * SLOT_PX - FULL_GAP;
+    } else if (durationMin < 30) {
+      // Shrink, but floor so the labels stay readable
+      const proportional = (durationMin / 30) * SLOT_PX - FULL_GAP;
+      heightPx = Math.max(SHORT_FLOOR_PX, proportional);
+    }
+    if (heightPx !== null) {
+      el.classList.add('sized');
+      el.style.height = heightPx + 'px';
+      // Mark slots that this expanded event now visually covers
+      if (durationMin > 30) {
+        let coveredMin = 30;
+        let h = startH, m = startM;
+        while (coveredMin < durationMin) {
+          m += 30;
+          if (m >= 60) { m = 0; h += 1; }
+          if (!isSlotEmpty(h, m)) break;
+          const coveredSlot = area.querySelector(`.hour-slot[data-hour="${h}"][data-minute="${m}"]`);
+          if (coveredSlot) coveredSlot.classList.add('covered');
+          coveredMin += 30;
+        }
+      }
+    }
   });
   // Now line if viewing today
   const now = new Date();
