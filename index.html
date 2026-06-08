@@ -1,7 +1,3 @@
-https://raw.githubusercontent.com/amy090tuffin/planner/main/index.html
-→ https://raw.githubusercontent.com/amy090tuffin/planner/main/index.html
-Content-Type: text/plain; charset=utf-8
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -551,6 +547,23 @@ function runMigrations(s) {
     });
   });
 
+  // Fix 6: self-heal scheduled-event categories. Any event created from a preset
+  // should always carry that preset's CURRENT category. recategorise_v2 only ran a
+  // generic old->new remap on events and missed the preset-specific overrides
+  // (e.g. Call Mum -> social, Reading -> relaxation), so placed events could show
+  // the wrong category. This re-syncs every preset-backed event to its preset.
+  apply('resync_event_cats_v1', () => {
+    const presetById = {};
+    (s.presets || []).forEach(p => { presetById[p.id] = p; });
+    const ebd = s.eventsByDate || {};
+    Object.keys(ebd).forEach(k => (ebd[k] || []).forEach(ev => {
+      if (ev.presetId && presetById[ev.presetId]) {
+        ev.cat = presetById[ev.presetId].cat;
+      }
+      if (CAT_MIGRATION[ev.cat]) ev.cat = CAT_MIGRATION[ev.cat];
+    }));
+  });
+
   localStorage.setItem(MIGRATION_KEY, JSON.stringify(applied));
 }
 
@@ -826,7 +839,8 @@ function renderCalendar() {
 
 function updateScheduledTime() {
   const events = getEvents(state.currentDay);
-  const totalH = events.reduce((s, e) => s + (e.completed ? 0 : e.duration), 0);
+  // Total time scheduled for the day (all events, regardless of completion).
+  const totalH = events.reduce((s, e) => s + (e.duration || 0), 0);
   const el = document.getElementById('scheduledTime');
   const numEl = document.getElementById('scheduledTimeNum');
   if (!el || !numEl) return;
