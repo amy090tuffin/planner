@@ -159,7 +159,7 @@
   .week-cell { background: #faf8f3; min-height: 26px; padding: 1px; position: relative; cursor: pointer; }
   .week-event { border-radius: 3px; padding: 1px 2px; font-size: 8px; font-weight: 500; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .week-cell { overflow: visible; }
-  .week-event-tall { position: absolute; left: 1px; right: 1px; top: 1px; z-index: 2; white-space: normal; text-overflow: clip; box-shadow: 0 1px 2px rgba(0,0,0,0.12); }
+  .week-event-tall { position: absolute; left: 1px; right: 1px; z-index: 2; white-space: normal; text-overflow: clip; box-shadow: 0 1px 2px rgba(0,0,0,0.12); }
   .week-event.cat-career { background: #c4b5d4; }
   .week-event.cat-fitness { background: #b5d4c4; }
   .week-event.cat-social { background: #d4b5c4; }
@@ -1514,29 +1514,41 @@ function renderWeek() {
     });
     grid.appendChild(cell);
   });
-  const WEEK_HOUR_PX = 26; // matches .week-cell min-height
+  const WEEK_HOUR_PX = 26; // matches .week-cell min-height = 1 hour
+  const WEEK_MIN_PX = 11;  // readable floor for very short blocks
   for (let h = 8; h <= 23; h++) {
     grid.appendChild(makeCell('week-hour-label', formatHour(h)));
     days.forEach(d => {
       const cell = makeCell('week-cell', '');
-      // Events that START in this hour. A multi-hour event is drawn once, in its
-      // start cell, and stretched downward to reflect its full duration.
-      const evs = getEvents(d).filter(e => Math.floor(e.hour) === h);
-      evs.slice(0, 3).forEach(e => {
-        const div = document.createElement('div');
-        div.className = 'week-event cat-' + catCode(e.cat);
-        div.textContent = e.title;
+      // Events that START in this hour.
+      const evs = getEvents(d).filter(e => Math.floor(e.hour) === h)
+                              .sort((a, b) => a.hour - b.hour);
+      // Single event in the hour -> position by its minute offset and scale its
+      // height to its true duration (so 30m, 45m, 1h, 2h all look different and
+      // long blocks visibly span the hours they cover). Multiple events sharing
+      // the hour -> stack them in flow so they stay legible.
+      if (evs.length === 1) {
+        const e = evs[0];
         const dur = e.duration || 0.5;
-        if (dur > 1) {
-          // Stretch across the hours it spans (clamped to the 23:00 row bottom).
-          const maxHours = (24 - h); // hours remaining in the visible grid
-          const spanHours = Math.min(dur, maxHours);
-          div.classList.add('week-event-tall');
-          div.style.height = (spanHours * WEEK_HOUR_PX - 3) + 'px';
-          div.title = e.title + ' · ' + formatDuration(dur);
-        }
+        const startMin = (e.hour - h);                 // 0..1 within the hour
+        const maxHours = (24 - h) - startMin;          // room left in visible grid
+        const spanHours = Math.min(dur, maxHours);
+        const div = document.createElement('div');
+        div.className = 'week-event week-event-tall cat-' + catCode(e.cat);
+        div.textContent = e.title;
+        div.title = e.title + ' · ' + formatDuration(dur);
+        div.style.top = (startMin * WEEK_HOUR_PX + 1) + 'px';
+        div.style.height = Math.max(WEEK_MIN_PX, spanHours * WEEK_HOUR_PX - 2) + 'px';
         cell.appendChild(div);
-      });
+      } else {
+        evs.slice(0, 3).forEach(e => {
+          const div = document.createElement('div');
+          div.className = 'week-event cat-' + catCode(e.cat);
+          div.textContent = e.title;
+          div.title = e.title + ' · ' + formatDuration(e.duration || 0.5);
+          cell.appendChild(div);
+        });
+      }
       grid.appendChild(cell);
     });
   }
