@@ -81,11 +81,11 @@
   .event.cat-fitness { background: #b5d4c4; color: #1f3a2a; }
   .event.cat-social { background: #d4b5c4; color: #3a1f2a; }
   .event.cat-appt { background: #b5c4d4; color: #1f2a3a; }
-  .event.cat-housework { background: #c4d4b5; color: #2a3a1f; }
-  .event.cat-grooming { background: #e0c8b8; color: #3a2820; }
-  .event.cat-admin { background: #c8c4b8; color: #2a2820; }
+  .event.cat-housework { background: #e3a9a0; color: #4a1f1a; }
+  .event.cat-grooming { background: #e8d488; color: #4a3a10; }
+  .event.cat-admin { background: #b89878; color: #3a2410; }
   .event.cat-creativity { background: #b8c8d8; color: #1f2838; }
-  .event.cat-relaxation { background: #d4c8e0; color: #281f38; }
+  .event.cat-relaxation { background: #ffffff; color: #2a2a2a; border: 1px solid #cfc8b8; }
   .event .time { font-size: 10px; opacity: 0.7; }
   .event .cat { font-size: 9px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; }
   .event .note-icon { font-size: 10px; margin-left: 4px; opacity: 0.8; }
@@ -121,11 +121,11 @@
   .tray-item.cat-career { border-left: 3px solid #8b6db8; }
   .tray-item.cat-fitness { border-left: 3px solid #5b9b7b; }
   .tray-item.cat-social { border-left: 3px solid #b86888; }
-  .tray-item.cat-housework { border-left: 3px solid #6b9b6b; }
-  .tray-item.cat-grooming { border-left: 3px solid #b88868; }
-  .tray-item.cat-admin { border-left: 3px solid #888868; }
+  .tray-item.cat-housework { border-left: 3px solid #c0524a; }
+  .tray-item.cat-grooming { border-left: 3px solid #d4b94a; }
+  .tray-item.cat-admin { border-left: 3px solid #8a5a2a; }
   .tray-item.cat-creativity { border-left: 3px solid #6888b8; }
-  .tray-item.cat-relaxation { border-left: 3px solid #9b7bb5; }
+  .tray-item.cat-relaxation { border-left: 3px solid #b8b0a0; }
   .tray-item .age { font-size: 9px; color: #c08040; font-weight: 600; margin-top: 2px; }
   .tray-item.dragging-touch { opacity: 0.9; transform: scale(1.08); box-shadow: 0 8px 20px rgba(0,0,0,0.25); z-index: 1000; position: fixed; pointer-events: none; }
   .tray-item.allocated { opacity: 0.5; background: #f3f0e8; cursor: pointer; }
@@ -158,14 +158,16 @@
   .week-hour-label { background: #faf8f3; font-size: 8px; color: #aaa; padding: 2px 1px; text-align: right; }
   .week-cell { background: #faf8f3; min-height: 26px; padding: 1px; position: relative; cursor: pointer; }
   .week-event { border-radius: 3px; padding: 1px 2px; font-size: 8px; font-weight: 500; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .week-cell { overflow: visible; }
+  .week-event-tall { position: absolute; left: 1px; right: 1px; top: 1px; z-index: 2; white-space: normal; text-overflow: clip; box-shadow: 0 1px 2px rgba(0,0,0,0.12); }
   .week-event.cat-career { background: #c4b5d4; }
   .week-event.cat-fitness { background: #b5d4c4; }
   .week-event.cat-social { background: #d4b5c4; }
-  .week-event.cat-housework { background: #c4d4b5; }
-  .week-event.cat-grooming { background: #e0c8b8; }
-  .week-event.cat-admin { background: #c8c4b8; }
+  .week-event.cat-housework { background: #e3a9a0; }
+  .week-event.cat-grooming { background: #e8d488; }
+  .week-event.cat-admin { background: #b89878; }
   .week-event.cat-creativity { background: #b8c8d8; }
-  .week-event.cat-relaxation { background: #d4c8e0; }
+  .week-event.cat-relaxation { background: #ffffff; border: 1px solid #cfc8b8; }
   .week-event.cat-appt { background: #b5c4d4; }
 
   /* INBOX */
@@ -176,11 +178,11 @@
   .inbox-item.cat-career { border-left: 4px solid #8b6db8; }
   .inbox-item.cat-fitness { border-left: 4px solid #5b9b7b; }
   .inbox-item.cat-social { border-left: 4px solid #b86888; }
-  .inbox-item.cat-housework { border-left: 4px solid #6b9b6b; }
-  .inbox-item.cat-grooming { border-left: 4px solid #b88868; }
-  .inbox-item.cat-admin { border-left: 4px solid #888868; }
+  .inbox-item.cat-housework { border-left: 4px solid #c0524a; }
+  .inbox-item.cat-grooming { border-left: 4px solid #d4b94a; }
+  .inbox-item.cat-admin { border-left: 4px solid #8a5a2a; }
   .inbox-item.cat-creativity { border-left: 4px solid #6888b8; }
-  .inbox-item.cat-relaxation { border-left: 4px solid #9b7bb5; }
+  .inbox-item.cat-relaxation { border-left: 4px solid #b8b0a0; }
   .inbox-item .label { font-size: 14px; font-weight: 500; }
   .inbox-item .meta { font-size: 11px; color: #999; margin-top: 2px; }
   .inbox-item.stale { background: #fdf6e9; }
@@ -300,7 +302,7 @@
               <h4>30-second day close-out →</h4>
               <p>Energy, mood, one-line note.</p>
             </div>
-            <button onclick="runEndOfDay()">⏰ End of day</button>
+            <button id="eodBtn" onclick="onEodButton()">⏰ End of day</button>
           </div>
         </div>
       </div>
@@ -386,8 +388,8 @@ const CAT_LABELS = {
   social: 'Social', career: 'Career', creativity: 'Creativity', relaxation: 'Relaxation', appt: 'Appointment'
 };
 const CAT_COLORS = {
-  housework: '#6b9b6b', grooming: '#b88868', fitness: '#5b9b7b', admin: '#888868',
-  social: '#b86888', career: '#8b6db8', creativity: '#6888b8', relaxation: '#9b7bb5', appt: '#688bb8'
+  housework: '#c0524a', grooming: '#d4b94a', fitness: '#5b9b7b', admin: '#8a5a2a',
+  social: '#b86888', career: '#8b6db8', creativity: '#6888b8', relaxation: '#cfc8b8', appt: '#688bb8'
 };
 const CAT_MIGRATION = {
   env: 'housework', care: 'grooming', health: 'fitness', work: 'career',
@@ -569,6 +571,20 @@ function runMigrations(s) {
         ev.cat = presetById[ev.presetId].cat;
       }
       if (CAT_MIGRATION[ev.cat]) ev.cat = CAT_MIGRATION[ev.cat];
+    }));
+  });
+
+  // Fix 7: Stretches is Fitness (default changed after some state was saved).
+  // Force any preset with id p_stretch to fitness, then re-sync EVERY preset-backed
+  // event to its preset's current category so placed blocks match the preset.
+  apply('stretch_fitness_resync_v1', () => {
+    const stretch = (s.presets || []).find(p => p.id === 'p_stretch');
+    if (stretch) stretch.cat = 'fitness';
+    const presetById = {};
+    (s.presets || []).forEach(p => { presetById[p.id] = p; });
+    const ebd = s.eventsByDate || {};
+    Object.keys(ebd).forEach(k => (ebd[k] || []).forEach(ev => {
+      if (ev.presetId && presetById[ev.presetId]) ev.cat = presetById[ev.presetId].cat;
     }));
   });
 
@@ -1122,8 +1138,12 @@ function renderTray() {
   scroll.innerHTML = '';
   const dow = state.currentDay.getDay();
   if (state.trayMode === 'presets') {
-    // All active draggable presets that apply today, NOT skipped today
-    const all = state.presets.filter(p => p.active && !p.time && (!p.days || p.days.includes(dow)) && !isPresetSkippedToday(p));
+    // Draggable presets that apply today, NOT skipped today.
+    const draggable = state.presets.filter(p => p.active && !p.time && (!p.days || p.days.includes(dow)) && !isPresetSkippedToday(p));
+    // Timed presets that apply today but whose auto-placed block has been REMOVED
+    // from this day reappear in the tray so they can be re-placed by hand.
+    const removedTimed = state.presets.filter(p => p.active && p.time && (!p.days || p.days.includes(dow)) && !isPresetSkippedToday(p) && !isPresetAllocatedToday(p));
+    const all = draggable.concat(removedTimed);
     const available = all.filter(p => !isPresetAllocatedToday(p));
     const allocated = all.filter(p => isPresetAllocatedToday(p));
     if (all.length === 0) {
@@ -1370,6 +1390,8 @@ function executeEndOfDay() {
     inbox: JSON.parse(JSON.stringify(state.inbox)),
     presetStreaks: state.presets.map(p => ({ id: p.id, skipStreak: p.skipStreak || 0 }))
   };
+  if (!state.eodSnapshots) state.eodSnapshots = {};
+  state.eodSnapshots[snapshot.dateKey] = snapshot;
   state.lastEodSnapshot = snapshot;
 
   let resurfaced = 0;
@@ -1397,7 +1419,7 @@ function executeEndOfDay() {
   });
   state.inbox.forEach(t => { if (!t.scheduledEventId && !t.completed) t.age = (t.age || 0) + 1; });
   saveState();
-  renderCalendar(); renderInbox(); renderTray(); renderPresets();
+  renderCalendar(); renderInbox(); renderTray(); renderPresets(); updateEodButton();
 
   let msg = `End of day. `;
   if (resurfaced) msg += `${resurfaced} task${resurfaced>1?'s':''} resurfaced. `;
@@ -1423,14 +1445,13 @@ function showUndoToast(msg) {
   setTimeout(() => {
     if (document.getElementById('undoToast')) {
       document.getElementById('undoToast').remove();
-      state.lastEodSnapshot = null;
-      saveState();
     }
   }, 30000);
 }
 
-function undoEndOfDay() {
-  const snap = state.lastEodSnapshot;
+function undoEndOfDay(dk) {
+  const key = dk || dateKey(state.currentDay);
+  const snap = (state.eodSnapshots && state.eodSnapshots[key]) || state.lastEodSnapshot;
   if (!snap) { showToast('Nothing to undo'); return; }
   // Restore events for that day
   state.eventsByDate[snap.dateKey] = snap.events;
@@ -1441,10 +1462,33 @@ function undoEndOfDay() {
     const p = state.presets.find(x => x.id === ps.id);
     if (p) p.skipStreak = ps.skipStreak;
   });
-  state.lastEodSnapshot = null;
+  // Clear the persistent record for this day
+  if (state.eodSnapshots) delete state.eodSnapshots[snap.dateKey];
+  if (state.lastEodSnapshot && state.lastEodSnapshot.dateKey === snap.dateKey) state.lastEodSnapshot = null;
+  const ut = document.getElementById('undoToast'); if (ut) ut.remove();
   saveState();
-  renderCalendar(); renderInbox(); renderTray(); renderPresets();
+  renderCalendar(); renderInbox(); renderTray(); renderPresets(); updateEodButton();
   showToast('End-of-day undone ✓');
+}
+
+// Has end-of-day been run (and not undone) for the day currently in view?
+function hasEodRecord(dk) {
+  const key = dk || dateKey(state.currentDay);
+  return !!(state.eodSnapshots && state.eodSnapshots[key]);
+}
+
+// Button routes to either running EOD or undoing it, based on the viewed day.
+function onEodButton() {
+  if (hasEodRecord()) undoEndOfDay();
+  else runEndOfDay();
+}
+
+// Relabel the Today-screen EOD button to match the viewed day's state.
+function updateEodButton() {
+  const btn = document.getElementById('eodBtn');
+  if (!btn) return;
+  if (hasEodRecord()) { btn.textContent = '↩ Undo end of day'; }
+  else { btn.textContent = '⏰ End of day'; }
 }
 
 // ============ WEEK VIEW ============
@@ -1470,15 +1514,27 @@ function renderWeek() {
     });
     grid.appendChild(cell);
   });
+  const WEEK_HOUR_PX = 26; // matches .week-cell min-height
   for (let h = 8; h <= 23; h++) {
     grid.appendChild(makeCell('week-hour-label', formatHour(h)));
     days.forEach(d => {
       const cell = makeCell('week-cell', '');
+      // Events that START in this hour. A multi-hour event is drawn once, in its
+      // start cell, and stretched downward to reflect its full duration.
       const evs = getEvents(d).filter(e => Math.floor(e.hour) === h);
-      evs.slice(0, 2).forEach(e => {
+      evs.slice(0, 3).forEach(e => {
         const div = document.createElement('div');
         div.className = 'week-event cat-' + catCode(e.cat);
         div.textContent = e.title;
+        const dur = e.duration || 0.5;
+        if (dur > 1) {
+          // Stretch across the hours it spans (clamped to the 23:00 row bottom).
+          const maxHours = (24 - h); // hours remaining in the visible grid
+          const spanHours = Math.min(dur, maxHours);
+          div.classList.add('week-event-tall');
+          div.style.height = (spanHours * WEEK_HOUR_PX - 3) + 'px';
+          div.title = e.title + ' · ' + formatDuration(dur);
+        }
         cell.appendChild(div);
       });
       grid.appendChild(cell);
@@ -1676,6 +1732,18 @@ function savePreset(presetId) {
   if (presetId) {
     const p = state.presets.find(x => x.id === presetId);
     Object.assign(p, data);
+    // Propagate category / name / duration / note changes to every already-placed
+    // event created from this preset, across all dates, so the calendar stays in
+    // sync with the preset definition.
+    Object.keys(state.eventsByDate || {}).forEach(k => {
+      (state.eventsByDate[k] || []).forEach(ev => {
+        if (ev.presetId === presetId) {
+          ev.cat = p.cat;
+          ev.title = p.name;
+          ev.note = p.note || ev.note;
+        }
+      });
+    });
   } else {
     state.presets.push({ id: 'p_' + Date.now(), ...data });
   }
@@ -1890,7 +1958,7 @@ function showToast(msg) {
 // ============ INIT ============
 function renderAll() {
   updateTodayHeader();
-  renderCalendar(); renderTray();
+  renderCalendar(); renderTray(); updateEodButton();
 }
 
 // Auto-run end-of-day catch-up on first load each day
