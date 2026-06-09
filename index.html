@@ -188,6 +188,10 @@
   .inbox-item.stale { background: #fdf6e9; }
   .inbox-item .actions { display: flex; gap: 6px; }
   .inbox-item .actions button { background: #f3f0e8; border: none; padding: 8px 10px; border-radius: 8px; font-size: 11px; cursor: pointer; color: #6b5b3f; min-height: 32px; }
+  .inbox-item { touch-action: pan-y; }
+  .inbox-item .drag-handle { flex: 0 0 auto; width: 28px; min-height: 36px; display: flex; align-items: center; justify-content: center; color: #c7c0b2; font-size: 16px; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; }
+  .inbox-item.dragging { opacity: 0.85; box-shadow: 0 6px 18px rgba(0,0,0,0.18); transform: scale(1.02); position: relative; z-index: 5; }
+  .inbox-item.drag-ghost { opacity: 0.35; }
 
   .triage-banner { background: #fdf6e9; border: 1px solid #e8d8a8; border-radius: 12px; padding: 12px; margin: 12px 12px 4px; font-size: 12px; color: #6b5b3f; }
   .triage-banner b { color: #4a3f25; }
@@ -1576,6 +1580,7 @@ function renderInbox() {
     sec.innerHTML = '<h3>Needs triage (14+ days old)</h3>';
     stale.forEach(item => sec.appendChild(makeInboxItem(item, true)));
     list.appendChild(sec);
+    enableInboxDrag(sec);
   }
   if (fresh.length > 0) {
     const sec = document.createElement('div');
@@ -1583,16 +1588,103 @@ function renderInbox() {
     sec.innerHTML = '<h3>All tasks</h3>';
     fresh.forEach(item => sec.appendChild(makeInboxItem(item, false)));
     list.appendChild(sec);
+    enableInboxDrag(sec);
   }
   if (visible.length === 0) {
     list.innerHTML = '<div style="color:#888; font-size:13px; text-align:center; padding:30px 12px;">Inbox empty. Tap + in the header to add a task.</div>';
   }
 }
 
+// Long-press drag-to-reorder for inbox items, scoped within one section.
+function enableInboxDrag(section) {
+  let dragEl = null, startY = 0, longPressTimer = null, active = false;
+  let pointerId = null, offsetY = 0;
+
+  function items() {
+    return Array.from(section.querySelectorAll('.inbox-item'));
+  }
+
+  function onPointerDown(e) {
+    const handle = e.target.closest('[data-handle]');
+    const itemEl = e.target.closest('.inbox-item');
+    if (!itemEl || !section.contains(itemEl)) return;
+    // On touch require the handle; mouse can grab anywhere on the handle too.
+    if (!handle) return;
+    e.preventDefault();
+    pointerId = e.pointerId;
+    startY = e.clientY;
+    const begin = () => {
+      active = true;
+      dragEl = itemEl;
+      dragEl.classList.add('dragging');
+      try { itemEl.setPointerCapture(pointerId); } catch (err) {}
+    };
+    // Small delay so a tap/scroll isn't treated as a drag.
+    longPressTimer = setTimeout(begin, 120);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+  }
+
+  function onPointerMove(e) {
+    if (e.pointerId !== pointerId) return;
+    if (!active) {
+      // If finger moves a lot before long-press fires, cancel (it's a scroll).
+      if (Math.abs(e.clientY - startY) > 8) cleanup();
+      return;
+    }
+    e.preventDefault();
+    const y = e.clientY;
+    const others = items().filter(el => el !== dragEl);
+    let placed = false;
+    for (const el of others) {
+      const r = el.getBoundingClientRect();
+      if (y < r.top + r.height / 2) {
+        section.insertBefore(dragEl, el);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) section.appendChild(dragEl);
+  }
+
+  function onPointerUp(e) {
+    if (e.pointerId !== pointerId) return;
+    if (active) commitOrder();
+    cleanup();
+  }
+
+  function commitOrder() {
+    const orderedIds = items().map(el => el.dataset.id);
+    const idSet = new Set(orderedIds);
+    const byId = {};
+    state.inbox.forEach(t => { byId[t.id] = t; });
+    // Reorder only this section's items within state.inbox, leaving
+    // all other items in their original array slots.
+    let q = 0;
+    state.inbox = state.inbox.map(t => idSet.has(t.id) ? byId[orderedIds[q++]] : t);
+    saveState();
+  }
+
+  function cleanup() {
+    clearTimeout(longPressTimer);
+    if (dragEl) dragEl.classList.remove('dragging');
+    if (dragEl && pointerId != null) { try { dragEl.releasePointerCapture(pointerId); } catch (err) {} }
+    dragEl = null; active = false; pointerId = null;
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
+    window.removeEventListener('pointercancel', onPointerUp);
+  }
+
+  section.addEventListener('pointerdown', onPointerDown);
+}
+
 function makeInboxItem(item, isStale) {
   const div = document.createElement('div');
   div.className = 'inbox-item cat-' + catCode(item.cat) + (isStale ? ' stale' : '');
+  div.dataset.id = item.id;
   div.innerHTML = `
+    <div class="drag-handle" data-handle aria-label="Drag to reorder">⠿</div>
     <div style="flex:1;">
       <div class="label">${item.label}${item.note ? ' 📝' : ''}</div>
       <div class="meta">${catLabel(item.cat)} · added ${item.age || 0}d ago</div>
