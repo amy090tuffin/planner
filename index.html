@@ -1884,13 +1884,26 @@ function renderReflect() {
       total += e.duration;
     });
   });
+  // Waking-time denominator: 15h/day (8am-11pm) across days elapsed so far.
+  // Current week counts Monday->today inclusive; past weeks count all 7 days;
+  // future weeks (shouldn't occur) also fall back to 7.
+  const WAKING_HOURS_PER_DAY = 15;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const mondayMid = new Date(monday); mondayMid.setHours(0, 0, 0, 0);
+  const daysSinceMonday = Math.floor((today.getTime() - mondayMid.getTime()) / 86400000);
+  let daysElapsed;
+  if (daysSinceMonday < 0) daysElapsed = 7;        // viewing a future week
+  else if (daysSinceMonday >= 6) daysElapsed = 7;   // viewing a past/finished week
+  else daysElapsed = daysSinceMonday + 1;           // current week: Mon..today inclusive
+  const wakingSoFar = daysElapsed * WAKING_HOURS_PER_DAY;
+
   const bars = document.getElementById('categoryBars');
   bars.innerHTML = '';
   if (total === 0) {
     bars.innerHTML = '<div style="font-size:12px; color:#888;">Mark tasks complete during the week to see your time breakdown.</div>';
   } else {
     Object.entries(catHours).sort((a,b)=>b[1]-a[1]).forEach(([cat, hours]) => {
-      const pct = (hours / total * 100).toFixed(0);
+      const pct = Math.min(100, hours / wakingSoFar * 100).toFixed(0);
       bars.innerHTML += `
         <div class="category-bar-row">
           <div class="name">${catLabel(cat)}</div>
