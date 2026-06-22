@@ -239,6 +239,8 @@
   .track-legend-key .key-planned { background: #cfc4ad; }
   .track-legend-key .key-target { color: #888; }
   .track-section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #a99; color: #b0a78f; margin: 4px 0 8px; }
+  .track-section-title { font-size: 13px; font-weight: 700; color: #4a3f25; margin: 0 0 12px; padding-bottom: 6px; border-bottom: 1px solid #e7e0cf; }
+  .track-section-title:not(:first-child) { margin-top: 24px; }
   .track-row { margin-bottom: 14px; }
   .track-row .track-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
   .track-row .track-name { font-size: 12px; color: #4a3f25; font-weight: 500; }
@@ -1896,7 +1898,11 @@ function renderReflect() {
   // Build a tracked row: two bars (completed, planned) scaled so the goal hours
   // sit at 100% of the track. Bars can exceed 100% (clamped visually) to show
   // overshoot. A marker line sits at the goal position.
-  function trackRow(g) {
+  // Build a single category row for either the "completed" or "planned" mode.
+  // completed mode: hours done + a completed bar.
+  // planned mode:   planned as a % of the target/cap + a planned bar, plus the
+  //                 status line (where you'll land if you follow the plan).
+  function trackRow(g, mode) {
     const done = completedH[g.cat] || 0;
     const plan = plannedH[g.cat] || 0;
     const color = catColor(g.cat);
@@ -1904,6 +1910,27 @@ function renderReflect() {
     const goalPct = scaleMax > 0 ? (g.hours / scaleMax * 100) : 100;
     const donePct = scaleMax > 0 ? Math.min(100, done / scaleMax * 100) : 0;
     const planPct = scaleMax > 0 ? Math.min(100, plan / scaleMax * 100) : 0;
+    const goalLabel = g.type === 'target' ? `target ${formatDuration(g.hours)}` : `cap ${formatDuration(g.hours)}`;
+
+    if (mode === 'completed') {
+      return `
+      <div class="track-row">
+        <div class="track-head">
+          <span class="track-name">${catLabel(g.cat)}</span>
+          <span class="track-fig"><span class="strong">${formatDuration(done)}</span> done · ${goalLabel}</span>
+        </div>
+        <div class="track-track" title="Completed: ${formatDuration(done)}">
+          <div class="track-fill" style="width:${donePct}%; background:${color};"></div>
+          <div class="track-marker" style="left:${goalPct}%;"></div>
+        </div>
+      </div>`;
+    }
+
+    // planned mode — percentage of target/cap reached
+    const pct = g.hours > 0 ? Math.round(plan / g.hours * 100) : 0;
+    const pctLabel = g.type === 'target'
+      ? `${pct}% of ${formatDuration(g.hours)} target`
+      : `${pct}% of ${formatDuration(g.hours)} cap`;
 
     // Status + colour by goal type, judged on PLANNED (where you'll land).
     let statusClass, statusText;
@@ -1918,40 +1945,53 @@ function renderReflect() {
       else { statusClass = 'good'; statusText = `Under the ${g.hours}h cap ✓`; }
     }
 
-    const goalLabel = g.type === 'target' ? `target ${formatDuration(g.hours)}` : `cap ${formatDuration(g.hours)}`;
     return `
       <div class="track-row">
         <div class="track-head">
           <span class="track-name">${catLabel(g.cat)}</span>
-          <span class="track-fig"><span class="strong">${formatDuration(done)}</span> done · ${formatDuration(plan)} planned · ${goalLabel}</span>
+          <span class="track-fig"><span class="strong">${pctLabel}</span> · ${formatDuration(plan)} planned</span>
         </div>
         <div class="track-track" title="Planned: ${formatDuration(plan)}">
           <div class="track-fill planned" style="width:${planPct}%; background:${color};"></div>
-          <div class="track-marker" style="left:${goalPct}%;"></div>
-        </div>
-        <div class="track-track" title="Completed: ${formatDuration(done)}">
-          <div class="track-fill" style="width:${donePct}%; background:${color};"></div>
           <div class="track-marker" style="left:${goalPct}%;"></div>
         </div>
         <div class="track-status ${statusClass}">${statusText}</div>
       </div>`;
   }
 
-  const targetRows = GOALS.filter(g => g.type === 'target').map(trackRow).join('');
-  const capRows = GOALS.filter(g => g.type === 'cap').map(trackRow).join('');
+  const targetGoals = GOALS.filter(g => g.type === 'target');
+  const capGoals = GOALS.filter(g => g.type === 'cap');
 
-  // Any time spent in categories without a goal (e.g. Appointment) shown neutrally.
-  const otherCats = Object.keys(plannedH).filter(c => !goalCats.has(c));
-  let otherRows = '';
-  if (otherCats.length) {
-    otherRows = otherCats.sort((a,b) => (plannedH[b]||0)-(plannedH[a]||0)).map(c => `
+  // Any time spent in categories without a goal (e.g. Appointment), shown neutrally.
+  const otherCats = Object.keys(plannedH)
+    .filter(c => !goalCats.has(c))
+    .sort((a,b) => (plannedH[b]||0)-(plannedH[a]||0));
+
+  function otherRow(c, mode) {
+    const fig = mode === 'completed'
+      ? `<span class="strong">${formatDuration(completedH[c]||0)}</span> done`
+      : `<span class="strong">${formatDuration(plannedH[c]||0)}</span> planned`;
+    const width = mode === 'completed'
+      ? ((plannedH[c]||0) > 0 ? Math.min(100, (completedH[c]||0)/(plannedH[c]||1)*100) : 0)
+      : 100;
+    return `
       <div class="track-row">
         <div class="track-head">
           <span class="track-name">${catLabel(c)}</span>
-          <span class="track-fig"><span class="strong">${formatDuration(completedH[c]||0)}</span> done · ${formatDuration(plannedH[c]||0)} planned</span>
+          <span class="track-fig">${fig}</span>
         </div>
-        <div class="track-track"><div class="track-fill" style="width:100%; background:${catColor(c)}; opacity:0.5;"></div></div>
-      </div>`).join('');
+        <div class="track-track"><div class="track-fill" style="width:${width}%; background:${catColor(c)}; opacity:0.5;"></div></div>
+      </div>`;
+  }
+
+  // Build the three sub-groups for a given mode ('completed' | 'planned').
+  function sectionBody(mode) {
+    const targetRows = targetGoals.map(g => trackRow(g, mode)).join('');
+    const capRows = capGoals.map(g => trackRow(g, mode)).join('');
+    const otherRows = otherCats.map(c => otherRow(c, mode)).join('');
+    return `<div class="track-section-label">Aiming to hit</div>${targetRows}` +
+      `<div class="track-section-label" style="margin-top:14px;">Keeping under</div>${capRows}` +
+      (otherRows ? `<div class="track-section-label" style="margin-top:14px;">Other</div>${otherRows}` : '');
   }
 
   const bars = document.getElementById('categoryBars');
@@ -1959,9 +1999,8 @@ function renderReflect() {
     bars.innerHTML = '<div style="font-size:12px; color:#888;">Schedule tasks this week to see how you\'re tracking against your goals.</div>';
   } else {
     bars.innerHTML =
-      `<div class="track-section-label">Aiming to hit</div>${targetRows}` +
-      `<div class="track-section-label" style="margin-top:14px;">Keeping under</div>${capRows}` +
-      (otherRows ? `<div class="track-section-label" style="margin-top:14px;">Other</div>${otherRows}` : '');
+      `<div class="track-section-title">Completed</div>${sectionBody('completed')}` +
+      `<div class="track-section-title">Planned</div>${sectionBody('planned')}`;
   }
 
   document.getElementById('totalScheduled').textContent =
