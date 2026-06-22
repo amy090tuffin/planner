@@ -224,16 +224,36 @@
   .category-bar-row .bar { flex: 1; height: 8px; background: #f0ece2; border-radius: 4px; overflow: hidden; }
   .category-bar-row .fill { height: 100%; border-radius: 4px; }
   .category-bar-row .hours { width: 36px; text-align: right; font-size: 11px; color: #888; }
-  .energy-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 6px; }
-  .energy-day { text-align: center; font-size: 10px; color: #888; }
-  .energy-day .dot { width: 26px; height: 26px; border-radius: 50%; margin: 4px auto; display: flex; align-items: center; justify-content: center; font-size: 13px; }
-  .goal-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0ece2; font-size: 12px; }
-  .goal-item:last-child { border-bottom: none; }
-  .goal-status { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
-  .goal-status.forward { background: #b5d4c4; }
-  .goal-status.stay { background: #f0ece2; }
-  .goal-status.let-go { background: #d4d0c4; color: #888; }
-  .insight { background: #f9f3e3; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 11px; color: #4a3f25; line-height: 1.4; }
+  /* Stacked single-bar view */
+  .stack-bar { display: flex; width: 100%; height: 14px; background: #f0ece2; border-radius: 7px; overflow: hidden; }
+  .stack-seg { height: 100%; }
+  .stack-legend { margin-top: 12px; }
+  .stack-legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 6px; }
+  .stack-legend-row .dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .stack-legend-row .name { flex: 1; font-size: 11px; color: #4a3f25; }
+  .stack-legend-row .hours { font-size: 11px; color: #888; }
+  /* Target/cap tracking bars */
+  .track-legend-key { display: flex; gap: 14px; flex-wrap: wrap; font-size: 10px; color: #888; margin-bottom: 14px; }
+  .track-legend-key .key-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .track-legend-key .key-done { background: #6b5b3f; }
+  .track-legend-key .key-planned { background: #cfc4ad; }
+  .track-legend-key .key-target { color: #888; }
+  .track-section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #a99; color: #b0a78f; margin: 4px 0 8px; }
+  .track-row { margin-bottom: 14px; }
+  .track-row .track-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+  .track-row .track-name { font-size: 12px; color: #4a3f25; font-weight: 500; }
+  .track-row .track-fig { font-size: 11px; color: #888; }
+  .track-row .track-fig .strong { font-weight: 600; }
+  .track-track { position: relative; background: #f0ece2; border-radius: 4px; height: 7px; margin-bottom: 3px; }
+  .track-track:last-child { margin-bottom: 0; }
+  .track-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; min-width: 2px; }
+  .track-fill.planned { opacity: 0.45; }
+  .track-marker { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #6b5b3f; border-radius: 1px; }
+  .track-status { font-size: 10px; margin-top: 4px; }
+  .track-status.good { color: #5b9b7b; }
+  .track-status.warn { color: #b08040; }
+  .track-status.over { color: #b04030; }
+  .track-status.neutral { color: #999; }
 
   /* MODAL */
   .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 200; padding: 16px; }
@@ -251,13 +271,6 @@
 
   .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #2a2a2a; color: white; padding: 10px 16px; border-radius: 20px; font-size: 12px; z-index: 300; opacity: 0; transition: opacity 0.3s; pointer-events: none; max-width: 90vw; text-align: center; }
   .toast.show { opacity: 0.92; }
-
-  .slider-container { margin: 12px 0; }
-  .slider-container label { display: block; font-size: 12px; color: #888; margin-bottom: 6px; }
-  .energy-slider { width: 100%; }
-  .mood-row { display: flex; justify-content: space-around; margin: 12px 0; }
-  .mood-row button { background: none; border: 2px solid transparent; font-size: 28px; padding: 6px; border-radius: 12px; cursor: pointer; min-width: 48px; }
-  .mood-row button.selected { border-color: #6b5b3f; background: #f9f3e3; }
 
   .now-line { position: absolute; left: 48px; right: 0; height: 2px; background: #c04040; z-index: 5; pointer-events: none; }
   .now-line::before { content: ''; position: absolute; left: -4px; top: -4px; width: 10px; height: 10px; background: #c04040; border-radius: 50%; }
@@ -302,10 +315,6 @@
         <div class="calendar-area" id="calendarArea"></div>
         <div class="checkout-prompt">
           <div class="row">
-            <div onclick="openCheckout()">
-              <h4>30-second day close-out →</h4>
-              <p>Energy, mood, one-line note.</p>
-            </div>
             <button id="eodBtn" onclick="onEodButton()">⏰ End of day</button>
           </div>
         </div>
@@ -339,34 +348,13 @@
       <div class="reflect-area">
         <div class="reflect-card">
           <h3>Where your time went this week</h3>
+          <div class="track-legend-key">
+            <span><span class="key-swatch key-done"></span>Completed</span>
+            <span><span class="key-swatch key-planned"></span>Planned</span>
+            <span class="key-target">▏target / cap</span>
+          </div>
           <div id="categoryBars"></div>
-          <div style="font-size: 11px; color: #888; margin-top: 10px;" id="totalScheduled">Total scheduled: —</div>
-        </div>
-        <div class="reflect-card">
-          <h3>Energy & mood</h3>
-          <div class="energy-grid" id="energyGrid"></div>
-          <div style="font-size: 11px; color: #888; margin-top: 10px; text-align: center;" id="energySummary">Log daily for patterns to emerge.</div>
-        </div>
-        <div class="reflect-card">
-          <h3>Last week's intentions</h3>
-          <div id="goalsList"><div style="font-size:12px; color:#888;">Set intentions below — they'll show here next week.</div></div>
-        </div>
-        <div class="reflect-card">
-          <h3>Patterns I noticed</h3>
-          <div id="insights"></div>
-        </div>
-        <div class="reflect-card">
-          <h3>What would make next week feel good?</h3>
-          <input type="text" id="intent1" placeholder="One thing you want to make space for…">
-          <input type="text" id="intent2" placeholder="Another…">
-          <input type="text" id="intent3" placeholder="And one more (optional)…">
-          <button class="btn-primary" onclick="saveIntents()" style="margin-top: 4px; padding: 10px 16px; border-radius: 8px; border: none; font-size: 13px; cursor: pointer;">Save intentions</button>
-        </div>
-        <div class="reflect-card">
-          <h3>Nightly close-out reminder</h3>
-          <div style="font-size:12px; color:#888; margin-bottom:10px;">A gentle nudge at 11pm each night to do your 30-second close-out.</div>
-          <div id="reminderStatus" style="font-size:13px; margin-bottom:10px;"></div>
-          <button class="btn-primary" id="reminderBtn" onclick="toggleReminder()" style="padding: 10px 16px; border-radius: 8px; border: none; font-size: 13px; cursor: pointer;">Enable 11pm reminder</button>
+          <div style="font-size: 11px; color: #888; margin-top: 12px;" id="totalScheduled">Total scheduled: —</div>
         </div>
       </div>
     </div>
@@ -464,9 +452,6 @@ function loadState() {
     eventsByDate: {},
     inbox: [],
     presets: defaultPresets(),
-    energy: {},
-    intents: [],
-    lastIntents: [],
     autoPlacedDates: {},
     lastSeenDate: null
   };
@@ -1875,166 +1860,115 @@ function renderReflect() {
   const monday = new Date(cur.getTime() - dayIdx * 86400000);
   const days = [];
   for (let i = 0; i < 7; i++) days.push(new Date(monday.getTime() + i * 86400000));
-  const catHours = {};
-  let total = 0;
+  // Per-category hours: completed (events marked done) and planned (all scheduled
+  // events this week, done + upcoming = where you'll land if you follow the plan).
+  const completedH = {};
+  const plannedH = {};
+  let totalCompleted = 0;
+  let totalPlanned = 0;
   days.forEach(d => {
     getEvents(d).forEach(e => {
-      if (!e.completed) return;
-      catHours[e.cat] = (catHours[e.cat] || 0) + e.duration;
-      total += e.duration;
+      const c = catCode(e.cat);
+      const dur = e.duration || 0;
+      plannedH[c] = (plannedH[c] || 0) + dur;
+      totalPlanned += dur;
+      if (e.completed) {
+        completedH[c] = (completedH[c] || 0) + dur;
+        totalCompleted += dur;
+      }
     });
   });
-  // Live waking-time denominator. Waking window is 8am-11pm (15h/day).
-  // Completed days before today contribute a full 15h; today contributes only
-  // the waking hours elapsed so far (clamped to the 8am-11pm window). The bars
-  // therefore track completed time against real elapsed waking time, live.
-  const WAKE_START = 8, WAKE_END = 23, WAKING_HOURS_PER_DAY = WAKE_END - WAKE_START; // 15
-  const now = new Date();
-  const todayMid = new Date(now); todayMid.setHours(0, 0, 0, 0);
-  const mondayMid = new Date(monday); mondayMid.setHours(0, 0, 0, 0);
-  const daysSinceMonday = Math.floor((todayMid.getTime() - mondayMid.getTime()) / 86400000);
-  let wakingSoFar;
-  if (daysSinceMonday < 0) {
-    wakingSoFar = 0;                                   // viewing a future week: nothing elapsed
-  } else if (daysSinceMonday >= 7) {
-    wakingSoFar = 7 * WAKING_HOURS_PER_DAY;            // viewing a past/finished week: full week
-  } else {
-    // hours elapsed in today's waking window so far
-    const elapsedToday = Math.min(WAKING_HOURS_PER_DAY,
-      Math.max(0, (now.getHours() + now.getMinutes() / 60) - WAKE_START));
-    wakingSoFar = daysSinceMonday * WAKING_HOURS_PER_DAY + elapsedToday;
+
+  // Weekly goals. type 'target' = want to reach the number (green as you near it);
+  // type 'cap' = want to stay under it (amber near, red at/over).
+  const GOALS = [
+    { cat: 'career',     type: 'target', hours: 20 },
+    { cat: 'creativity', type: 'target', hours: 15 },
+    { cat: 'relaxation', type: 'target', hours: 7 },
+    { cat: 'fitness',    type: 'target', hours: 13 },
+    { cat: 'housework',  type: 'cap',    hours: 10 },
+    { cat: 'grooming',   type: 'cap',    hours: 5 },
+    { cat: 'admin',      type: 'cap',    hours: 3.5 },
+    { cat: 'social',     type: 'cap',    hours: 7 }
+  ];
+  const goalCats = new Set(GOALS.map(g => g.cat));
+
+  // Build a tracked row: two bars (completed, planned) scaled so the goal hours
+  // sit at 100% of the track. Bars can exceed 100% (clamped visually) to show
+  // overshoot. A marker line sits at the goal position.
+  function trackRow(g) {
+    const done = completedH[g.cat] || 0;
+    const plan = plannedH[g.cat] || 0;
+    const color = catColor(g.cat);
+    const scaleMax = Math.max(g.hours, plan, done);   // longest thing on the track
+    const goalPct = scaleMax > 0 ? (g.hours / scaleMax * 100) : 100;
+    const donePct = scaleMax > 0 ? Math.min(100, done / scaleMax * 100) : 0;
+    const planPct = scaleMax > 0 ? Math.min(100, plan / scaleMax * 100) : 0;
+
+    // Status + colour by goal type, judged on PLANNED (where you'll land).
+    let statusClass, statusText;
+    if (g.type === 'target') {
+      const remaining = g.hours - plan;
+      if (plan >= g.hours) { statusClass = 'good'; statusText = `On track to hit ${g.hours}h ✓`; }
+      else if (plan >= g.hours * 0.8) { statusClass = 'warn'; statusText = `${formatDuration(remaining)} short of ${g.hours}h target`; }
+      else { statusClass = 'neutral'; statusText = `${formatDuration(remaining)} more planned needed to hit ${g.hours}h`; }
+    } else { // cap
+      if (plan > g.hours) { statusClass = 'over'; statusText = `${formatDuration(plan - g.hours)} over the ${g.hours}h cap`; }
+      else if (plan >= g.hours * 0.8) { statusClass = 'warn'; statusText = `Near the ${g.hours}h cap`; }
+      else { statusClass = 'good'; statusText = `Under the ${g.hours}h cap ✓`; }
+    }
+
+    const goalLabel = g.type === 'target' ? `target ${formatDuration(g.hours)}` : `cap ${formatDuration(g.hours)}`;
+    return `
+      <div class="track-row">
+        <div class="track-head">
+          <span class="track-name">${catLabel(g.cat)}</span>
+          <span class="track-fig"><span class="strong">${formatDuration(done)}</span> done · ${formatDuration(plan)} planned · ${goalLabel}</span>
+        </div>
+        <div class="track-track" title="Planned: ${formatDuration(plan)}">
+          <div class="track-fill planned" style="width:${planPct}%; background:${color};"></div>
+          <div class="track-marker" style="left:${goalPct}%;"></div>
+        </div>
+        <div class="track-track" title="Completed: ${formatDuration(done)}">
+          <div class="track-fill" style="width:${donePct}%; background:${color};"></div>
+          <div class="track-marker" style="left:${goalPct}%;"></div>
+        </div>
+        <div class="track-status ${statusClass}">${statusText}</div>
+      </div>`;
+  }
+
+  const targetRows = GOALS.filter(g => g.type === 'target').map(trackRow).join('');
+  const capRows = GOALS.filter(g => g.type === 'cap').map(trackRow).join('');
+
+  // Any time spent in categories without a goal (e.g. Appointment) shown neutrally.
+  const otherCats = Object.keys(plannedH).filter(c => !goalCats.has(c));
+  let otherRows = '';
+  if (otherCats.length) {
+    otherRows = otherCats.sort((a,b) => (plannedH[b]||0)-(plannedH[a]||0)).map(c => `
+      <div class="track-row">
+        <div class="track-head">
+          <span class="track-name">${catLabel(c)}</span>
+          <span class="track-fig"><span class="strong">${formatDuration(completedH[c]||0)}</span> done · ${formatDuration(plannedH[c]||0)} planned</span>
+        </div>
+        <div class="track-track"><div class="track-fill" style="width:100%; background:${catColor(c)}; opacity:0.5;"></div></div>
+      </div>`).join('');
   }
 
   const bars = document.getElementById('categoryBars');
-  bars.innerHTML = '';
-  if (total === 0 || wakingSoFar <= 0) {
-    bars.innerHTML = '<div style="font-size:12px; color:#888;">Mark tasks complete during the week to see your time breakdown.</div>';
+  if (totalPlanned === 0) {
+    bars.innerHTML = '<div style="font-size:12px; color:#888;">Schedule tasks this week to see how you\'re tracking against your goals.</div>';
   } else {
-    Object.entries(catHours).sort((a,b)=>b[1]-a[1]).forEach(([cat, hours]) => {
-      const pct = Math.min(100, hours / wakingSoFar * 100).toFixed(0);
-      bars.innerHTML += `
-        <div class="category-bar-row">
-          <div class="name">${catLabel(cat)}</div>
-          <div class="bar"><div class="fill" style="width:${pct}%; background:${catColor(cat)};"></div></div>
-          <div class="hours">${formatDuration(hours)}</div>
-        </div>`;
-    });
-  }
-  document.getElementById('totalScheduled').textContent = `Total completed: ${formatDuration(total)}`;
-
-  // Energy
-  const eg = document.getElementById('energyGrid');
-  eg.innerHTML = '';
-  days.forEach(d => {
-    const k = dateKey(d);
-    const e = state.energy[k];
-    const dayLabel = DAY_NAMES[d.getDay()];
-    if (e) {
-      eg.innerHTML += `<div class="energy-day"><div style="font-weight:600;">${dayLabel}</div><div class="dot" style="background: rgba(91, 155, 123, ${e.val/5});">${e.mood}</div><div>${e.val}/5</div></div>`;
-    } else {
-      eg.innerHTML += `<div class="energy-day"><div style="font-weight:600;">${dayLabel}</div><div class="dot" style="background:#f0ece2; color:#ccc;">·</div><div style="color:#ccc;">—</div></div>`;
-    }
-  });
-
-  // Goals (from last week's intents)
-  const goalsList = document.getElementById('goalsList');
-  if (state.lastIntents && state.lastIntents.length) {
-    goalsList.innerHTML = state.lastIntents.map(g => `
-      <div class="goal-item">
-        <div class="goal-status stay">·</div>
-        <div style="flex:1;">${g}</div>
-        <div style="font-size:11px;color:#999;">tap to mark</div>
-      </div>`).join('');
-  } else {
-    goalsList.innerHTML = '<div style="font-size:12px; color:#888;">No intentions logged yet. Set some below to track next week.</div>';
+    bars.innerHTML =
+      `<div class="track-section-label">Aiming to hit</div>${targetRows}` +
+      `<div class="track-section-label" style="margin-top:14px;">Keeping under</div>${capRows}` +
+      (otherRows ? `<div class="track-section-label" style="margin-top:14px;">Other</div>${otherRows}` : '');
   }
 
-  // Insights
-  const insights = document.getElementById('insights');
-  const observations = [];
-  // Pattern: which day has lowest energy?
-  const energyVals = days.map(d => state.energy[dateKey(d)]).filter(Boolean);
-  if (energyVals.length >= 3) {
-    const avg = energyVals.reduce((a,b) => a + b.val, 0) / energyVals.length;
-    if (avg < 3) observations.push(`Average energy this week is ${avg.toFixed(1)}/5. Be gentle with yourself.`);
-    if (avg >= 4) observations.push(`Energy averaged ${avg.toFixed(1)}/5 this week. Whatever you're doing is working.`);
-  }
-  // Preset skip streaks
-  state.presets.forEach(p => {
-    if (p.skipStreak >= 3) observations.push(`"${p.name}" skipped ${p.skipStreak} times running. Consider pausing or changing cadence.`);
-  });
-  if (observations.length === 0) {
-    observations.push("Patterns will appear here as you log more days. Keep checking in.");
-  }
-  insights.innerHTML = observations.map(o => `<div class="insight">${o}</div>`).join('');
-
-  // Pre-fill intent inputs
-  if (state.intents && state.intents.length) {
-    document.getElementById('intent1').value = state.intents[0] || '';
-    document.getElementById('intent2').value = state.intents[1] || '';
-    document.getElementById('intent3').value = state.intents[2] || '';
-  }
-
-  // Keep the reminder button/status in sync with current permission + setting
-  if (typeof updateReminderUI === 'function') updateReminderUI();
+  document.getElementById('totalScheduled').textContent =
+    `${formatDuration(totalCompleted)} completed so far · ${formatDuration(totalPlanned)} planned this week`;
 }
 
-function saveIntents() {
-  state.lastIntents = state.intents.slice();
-  state.intents = [
-    document.getElementById('intent1').value.trim(),
-    document.getElementById('intent2').value.trim(),
-    document.getElementById('intent3').value.trim()
-  ].filter(Boolean);
-  saveState();
-  showToast('Intentions saved ✓');
-}
-
-// ============ CHECKOUT / QUICK ADD ============
-function openCheckout() {
-  const modal = document.getElementById('modalContent');
-  modal.innerHTML = `
-    <h3>How was today?</h3>
-    <div class="slider-container">
-      <label>Energy level</label>
-      <input type="range" class="energy-slider" min="1" max="5" value="3" id="energyVal">
-      <div style="display:flex; justify-content:space-between; font-size:10px; color:#888;">
-        <span>Drained</span><span>OK</span><span>Energised</span>
-      </div>
-    </div>
-    <div class="slider-container">
-      <label>Mood</label>
-      <div class="mood-row">
-        <button data-mood="😩">😩</button><button data-mood="😐">😐</button>
-        <button data-mood="🙂">🙂</button><button data-mood="😊">😊</button><button data-mood="😄">😄</button>
-      </div>
-    </div>
-    <label>One line about today (optional)</label>
-    <textarea id="dayNote" placeholder="What went well / what didn't…"></textarea>
-    <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn-primary" onclick="saveCheckout()">Save</button>
-    </div>
-  `;
-  modal.querySelectorAll('.mood-row button').forEach(b => {
-    b.addEventListener('click', () => {
-      modal.querySelectorAll('.mood-row button').forEach(x => x.classList.remove('selected'));
-      b.classList.add('selected');
-    });
-  });
-  document.getElementById('modalBg').classList.add('show');
-}
-
-function saveCheckout() {
-  const val = parseInt(document.getElementById('energyVal').value);
-  const moodBtn = document.querySelector('.mood-row button.selected');
-  const mood = moodBtn ? moodBtn.dataset.mood : '🙂';
-  const note = document.getElementById('dayNote').value.trim();
-  state.energy[dateKey(state.currentDay)] = { val, mood, note };
-  saveState(); closeModal();
-  showToast('Checked in ✓');
-}
-
+// ============ QUICK ADD ============
 document.getElementById('inboxAddBtn').addEventListener('click', () => {
   const modal = document.getElementById('modalContent');
   modal.innerHTML = `
@@ -2108,107 +2042,10 @@ updateScheduledTime();
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js')
-      .then(() => { initReminder(); })
-      .catch(err => { console.log('SW registration failed:', err); initReminder(); });
-  });
-} else {
-  initReminder();
-}
-
-// ============ NIGHTLY CLOSE-OUT REMINDER (best-effort, client-side) ============
-const REMINDER_HOUR = 23;
-const REMINDER_MINUTE = 0;
-const REMINDER_TITLE = 'Planner';
-const REMINDER_BODY = 'Time for your 30-second close-out.';
-let reminderTimer = null;
-
-function msUntilNextReminder(from) {
-  const now = from ? new Date(from) : new Date();
-  const target = new Date(now);
-  target.setHours(REMINDER_HOUR, REMINDER_MINUTE, 0, 0);
-  if (target.getTime() <= now.getTime()) { target.setDate(target.getDate() + 1); }
-  return target.getTime() - now.getTime();
-}
-
-function notificationsSupported() { return ('Notification' in window); }
-
-function showReminderNow() {
-  const opts = { body: REMINDER_BODY, tag: 'nightly-closeout', icon: 'icon-192.png', badge: 'icon-192.png' };
-  if (navigator.serviceWorker && navigator.serviceWorker.ready) {
-    navigator.serviceWorker.ready
-      .then(reg => reg.showNotification(REMINDER_TITLE, opts))
-      .catch(() => { try { new Notification(REMINDER_TITLE, opts); } catch (e) {} });
-  } else {
-    try { new Notification(REMINDER_TITLE, opts); } catch (e) {}
-  }
-  state.lastReminderShown = dateKey(new Date());
-  saveState();
-}
-
-function scheduleReminder() {
-  if (reminderTimer) { clearTimeout(reminderTimer); reminderTimer = null; }
-  if (!state.reminderEnabled) return;
-  if (!notificationsSupported() || Notification.permission !== 'granted') return;
-  const delay = msUntilNextReminder();
-  reminderTimer = setTimeout(() => { showReminderNow(); scheduleReminder(); }, delay);
-}
-
-function showMissedReminderIfNeeded() {
-  if (!state.reminderEnabled) return;
-  if (!notificationsSupported() || Notification.permission !== 'granted') return;
-  const now = new Date();
-  const todayK = dateKey(now);
-  const past11 = (now.getHours() > REMINDER_HOUR) ||
-                 (now.getHours() === REMINDER_HOUR && now.getMinutes() >= REMINDER_MINUTE);
-  if (past11 && state.lastReminderShown !== todayK) { showReminderNow(); }
-}
-
-function initReminder() {
-  updateReminderUI();
-  if (state.reminderEnabled && notificationsSupported() && Notification.permission === 'granted') {
-    showMissedReminderIfNeeded();
-    scheduleReminder();
-  }
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && state.reminderEnabled
-        && notificationsSupported() && Notification.permission === 'granted') {
-      showMissedReminderIfNeeded();
-      scheduleReminder();
-    }
+      .catch(err => { console.log('SW registration failed:', err); });
   });
 }
 
-function toggleReminder() {
-  if (!notificationsSupported()) { updateReminderUI('This browser does not support notifications.'); return; }
-  if (state.reminderEnabled) {
-    state.reminderEnabled = false; saveState();
-    if (reminderTimer) { clearTimeout(reminderTimer); reminderTimer = null; }
-    updateReminderUI(); return;
-  }
-  if (Notification.permission === 'granted') {
-    state.reminderEnabled = true; saveState(); scheduleReminder(); updateReminderUI();
-  } else if (Notification.permission === 'denied') {
-    updateReminderUI('Notifications are blocked. Enable them for this site in your browser settings, then try again.');
-  } else {
-    Notification.requestPermission().then(perm => {
-      if (perm === 'granted') { state.reminderEnabled = true; saveState(); scheduleReminder(); updateReminderUI(); }
-      else { updateReminderUI('Permission not granted - reminder stays off.'); }
-    });
-  }
-}
-
-function updateReminderUI(msg) {
-  const btn = document.getElementById('reminderBtn');
-  const status = document.getElementById('reminderStatus');
-  if (!btn || !status) return;
-  const on = !!state.reminderEnabled && notificationsSupported() && Notification.permission === 'granted';
-  btn.textContent = on ? 'Turn off 11pm reminder' : 'Enable 11pm reminder';
-  if (msg) { status.textContent = msg; status.style.color = '#b04030'; }
-  else if (on) { status.textContent = 'On - you will get a nudge at 11pm each night.'; status.style.color = '#5b9b7b'; }
-  else if (notificationsSupported() && Notification.permission === 'denied') {
-    status.textContent = 'Notifications blocked for this site. Enable in browser settings to use.'; status.style.color = '#b08040';
-  } else { status.textContent = 'Off.'; status.style.color = '#888'; }
-}
 </script>
 </body>
 </html>
