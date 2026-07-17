@@ -1574,15 +1574,15 @@ function renderWeek() {
     grid.appendChild(makeCell('week-hour-label', formatHour(h)));
     days.forEach(d => {
       const cell = makeCell('week-cell', '');
-      // Events that START in this hour.
+      // Every event that STARTS in this hour is drawn as a block whose HEIGHT
+      // reflects its true duration (30m, 45m, 1h, 2h all look different and long
+      // blocks span the hours they cover). When several start in the same hour we
+      // place them side by side so each keeps its real height instead of
+      // collapsing to a fixed-size chip.
       const evs = getEvents(d).filter(e => Math.floor(e.hour) === h)
                               .sort((a, b) => a.hour - b.hour);
-      // Single event in the hour -> position by its minute offset and scale its
-      // height to its true duration (so 30m, 45m, 1h, 2h all look different and
-      // long blocks visibly span the hours they cover). Multiple events sharing
-      // the hour -> stack them in flow so they stay legible.
-      if (evs.length === 1) {
-        const e = evs[0];
+      const cols = Math.min(evs.length, 4);            // cap columns so labels stay legible
+      evs.slice(0, 4).forEach((e, i) => {
         const dur = e.duration || 0.5;
         const startMin = (e.hour - h);                 // 0..1 within the hour
         const maxHours = (24 - h) - startMin;          // room left in visible grid
@@ -1593,16 +1593,13 @@ function renderWeek() {
         div.title = e.title + ' · ' + formatDuration(dur);
         div.style.top = (startMin * WEEK_HOUR_PX + 1) + 'px';
         div.style.height = Math.max(WEEK_MIN_PX, spanHours * WEEK_HOUR_PX - 2) + 'px';
+        // Side-by-side layout when more than one block starts in this hour.
+        const wpct = 100 / cols;
+        div.style.left = 'calc(' + (i * wpct) + '% + 1px)';
+        div.style.width = 'calc(' + wpct + '% - 2px)';
+        div.style.right = 'auto';
         cell.appendChild(div);
-      } else {
-        evs.slice(0, 3).forEach(e => {
-          const div = document.createElement('div');
-          div.className = 'week-event cat-' + catCode(e.cat);
-          div.textContent = e.title;
-          div.title = e.title + ' · ' + formatDuration(e.duration || 0.5);
-          cell.appendChild(div);
-        });
-      }
+      });
       grid.appendChild(cell);
     });
   }
