@@ -617,10 +617,70 @@ function autoPlaceTimedPresets(date) {
       duration: p.duration,
       presetId: p.id,
       note: p.note || '',
+      auto: true,
       completed: false
     });
   });
   state.autoPlacedDates[key] = true;
+  saveState();
+}
+
+// ============ RESYNC PRESET-BACKED EVENTS ============
+// Reconciles already-placed events with the CURRENT preset definitions so every
+// view (today + week) stays in sync when a preset is toggled, edited, or deleted.
+// Rules (chosen with the user): only touch TODAY and future dates — past days are
+// left as a historical record — and never remove or re-time a COMPLETED event.
+function resyncPresetEvents() {
+  const todayKey = dateKey(new Date());               // 'YYYY-MM-DD' sorts chronologically
+  const presetById = {};
+  (state.presets || []).forEach(p => { presetById[p.id] = p; });
+
+  Object.keys(state.eventsByDate || {}).forEach(k => {
+    const isFuture = k >= todayKey;                    // today or later
+    const dow = new Date(k + 'T00:00:00').getDay();
+    let list = state.eventsByDate[k] || [];
+
+    // Decide which events survive.
+    list = list.filter(ev => {
+      if (!ev.presetId) return true;                   // hand-made / inbox events untouched
+      if (ev.completed) return true;                   // keep history, always
+      const p = presetById[ev.presetId];
+      if (!p) return !isFuture;                         // preset deleted -> drop future copies
+      if (!isFuture) return true;                       // never rewrite the past
+      if (!p.active) return false;                      // preset paused -> drop future copies
+      // Auto-placed copies also follow the preset's day / skip / timing rules.
+      const isAuto = ev.auto === true || ev.id === ('e_' + p.id + '_' + k);
+      if (isAuto) {
+        if ((p.skipDates || []).includes(k)) return false;
+        if (p.days && !p.days.includes(dow)) return false;
+        if (!p.time) return false;                      // no longer auto-placed -> lives in tray instead
+      }
+      return true;
+    });
+
+    // Push the current preset definition onto the survivors.
+    list.forEach(ev => {
+      if (!ev.presetId) return;
+      const p = presetById[ev.presetId];
+      if (!p) return;
+      ev.title = p.name;
+      ev.cat = p.cat;
+      ev.note = p.note || ev.note;
+      if (!ev.completed) {
+        ev.duration = p.duration;
+        const isAuto = ev.auto === true || ev.id === ('e_' + p.id + '_' + k);
+        if (isAuto && p.time) {
+          const [h, m] = p.time.split(':').map(Number);
+          ev.hour = h + m / 60;
+        }
+      }
+    });
+
+    state.eventsByDate[k] = list;
+  });
+
+  // Let timed presets re-place themselves everywhere (autoPlace guards against dupes).
+  state.autoPlacedDates = {};
   saveState();
 }
 
@@ -1767,7 +1827,8 @@ function makePresetItem(p) {
   `;
   div.querySelector('.preset-toggle').addEventListener('click', () => {
     p.active = !p.active;
-    saveState(); renderPresets(); renderTray();
+    resyncPresetEvents();
+    refreshAfterPresetChange();
   });
   div.querySelector('.preset-edit-link').addEventListener('click', () => openPresetModal(p.id));
   return div;
@@ -1817,41 +1878,39 @@ function savePreset(presetId) {
     cadence: document.getElementById('prCadence').value.trim() || 'daily',
     days: days.length ? days : null,
     time: document.getElementById('prTime').value || null,
-    note: document.getElementById('prNote').value.trim(),
-    active: true
+    note: document.getElementById('prNote').value.trim()
   };
   if (presetId) {
     const p = state.presets.find(x => x.id === presetId);
-    Object.assign(p, data);
-    // Propagate category / name / duration / note changes to every already-placed
-    // event created from this preset, across all dates, so the calendar stays in
-    // sync with the preset definition.
-    Object.keys(state.eventsByDate || {}).forEach(k => {
-      (state.eventsByDate[k] || []).forEach(ev => {
-        if (ev.presetId === presetId) {
-          ev.cat = p.cat;
-          ev.title = p.name;
-          ev.note = p.note || ev.note;
-        }
-      });
-    });
+    Object.assign(p, data);   // keep existing p.active — editing must not silently un-pause a preset
   } else {
-    state.presets.push({ id: 'p_' + Date.now(), ...data });
+    state.presets.push({ id: 'p_' + Date.now(), active: true, ...data });
   }
-  // Clear auto-placed flag so timed presets re-place
-  state.autoPlacedDates = {};
-  saveState();
+  // Re-sync every placed event to the new definition, then refresh all views.
+  resyncPresetEvents();
   closeModal();
-  renderPresets(); renderTray(); renderCalendar();
+  refreshAfterPresetChange();
   showToast('Preset saved');
 }
 
 function deletePreset(presetId) {
   state.presets = state.presets.filter(p => p.id !== presetId);
-  saveState();
+  resyncPresetEvents();
   closeModal();
-  renderPresets(); renderTray();
+  refreshAfterPresetChange();
   showToast('Preset deleted');
+}
+
+// Refresh every view that a preset change can affect, regardless of which
+// screen is currently open.
+function refreshAfterPresetChange() {
+  renderPresets();
+  renderTray();
+  renderCalendar();
+  if (typeof activeScreen !== 'undefined' && activeScreen === 'week') {
+    updateWeekHeader();
+    renderWeek();
+  }
 }
 
 // ============ REFLECT ============
