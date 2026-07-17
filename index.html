@@ -642,18 +642,21 @@ function resyncPresetEvents() {
 
     // Decide which events survive.
     list = list.filter(ev => {
-      if (!ev.presetId) return true;                   // hand-made / inbox events untouched
       if (ev.completed) return true;                   // keep history, always
-      const p = presetById[ev.presetId];
-      if (!p) return !isFuture;                         // preset deleted -> drop future copies
-      if (!isFuture) return true;                       // never rewrite the past
-      if (!p.active) return false;                      // preset paused -> drop future copies
-      // Auto-placed copies also follow the preset's day / skip / timing rules.
-      const isAuto = ev.auto === true || ev.id === ('e_' + p.id + '_' + k);
-      if (isAuto) {
+      // An auto-placed preset block has id 'e_<presetId>_<datekey>'. Detect that
+      // shape so we can also clean up LEGACY blocks whose presetId field was never
+      // stored. Manual (+) and inbox blocks use 'e_<timestamp>' and never match.
+      const looksAuto = ev.auto === true || /_\d{4}-\d{2}-\d{2}$/.test(ev.id || '');
+      if (!ev.presetId && !looksAuto) return true;     // genuine hand-made / inbox event
+      if (!isFuture) return true;                      // never rewrite the past
+      // From here down: a future, preset-derived block.
+      const p = ev.presetId ? presetById[ev.presetId] : null;
+      if (!p) return false;                            // backing preset deleted -> drop
+      if (!p.active) return false;                     // preset paused -> drop
+      if (looksAuto) {                                 // auto blocks follow day / skip / timing rules
         if ((p.skipDates || []).includes(k)) return false;
         if (p.days && !p.days.includes(dow)) return false;
-        if (!p.time) return false;                      // no longer auto-placed -> lives in tray instead
+        if (!p.time) return false;                     // no longer auto-placed -> lives in tray instead
       }
       return true;
     });
