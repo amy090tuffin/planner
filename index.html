@@ -160,6 +160,10 @@
   .week-event { border-radius: 3px; padding: 1px 2px; font-size: 8px; font-weight: 500; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .week-cell { overflow: visible; }
   .week-event-tall { position: absolute; left: 1px; right: 1px; z-index: 2; white-space: normal; text-overflow: clip; box-shadow: 0 1px 2px rgba(0,0,0,0.12); }
+  /* Continuous per-day timeline (Outlook-style): events positioned by real start/end. */
+  .week-times { background: #faf8f3; }
+  .week-hr { height: 26px; box-sizing: border-box; font-size: 8px; color: #aaa; text-align: right; padding: 1px 2px 0 0; }
+  .week-daycol { background: #faf8f3; position: relative; overflow: visible; background-image: linear-gradient(to bottom, #ece8de 0, #ece8de 1px, transparent 1px); background-size: 100% 26px; }
   .week-event.cat-career { background: #c4b5d4; }
   .week-event.cat-fitness { background: #b5d4c4; }
   .week-event.cat-social { background: #d4b5c4; }
@@ -1558,6 +1562,14 @@ function renderWeek() {
   const todayKey = dateKey(new Date());
   // Auto-place for all days in view
   days.forEach(d => autoPlaceTimedPresets(d));
+
+  const HOUR_PX = 26;        // pixels per hour
+  const MIN_PX = 11;         // readable floor for very short blocks
+  const DAY_START = 8;       // visible window: 8am ..
+  const DAY_END = 24;        // .. midnight
+  const COL_H = (DAY_END - DAY_START) * HOUR_PX;
+
+  // Row 1: header (empty corner + 7 day headers)
   grid.appendChild(makeCell('week-day-header', ''));
   days.forEach((d) => {
     const isToday = dateKey(d) === todayKey;
@@ -1568,41 +1580,85 @@ function renderWeek() {
     });
     grid.appendChild(cell);
   });
-  const WEEK_HOUR_PX = 26; // matches .week-cell min-height = 1 hour
-  const WEEK_MIN_PX = 11;  // readable floor for very short blocks
-  for (let h = 8; h <= 23; h++) {
-    grid.appendChild(makeCell('week-hour-label', formatHour(h)));
-    days.forEach(d => {
-      const cell = makeCell('week-cell', '');
-      // Every event that STARTS in this hour is drawn as a block whose HEIGHT
-      // reflects its true duration (30m, 45m, 1h, 2h all look different and long
-      // blocks span the hours they cover). When several start in the same hour we
-      // place them side by side so each keeps its real height instead of
-      // collapsing to a fixed-size chip.
-      const evs = getEvents(d).filter(e => Math.floor(e.hour) === h)
-                              .sort((a, b) => a.hour - b.hour);
-      const cols = Math.min(evs.length, 4);            // cap columns so labels stay legible
-      evs.slice(0, 4).forEach((e, i) => {
-        const dur = e.duration || 0.5;
-        const startMin = (e.hour - h);                 // 0..1 within the hour
-        const maxHours = (24 - h) - startMin;          // room left in visible grid
-        const spanHours = Math.min(dur, maxHours);
-        const div = document.createElement('div');
-        div.className = 'week-event week-event-tall cat-' + catCode(e.cat);
-        div.textContent = e.title;
-        div.title = e.title + ' · ' + formatDuration(dur);
-        div.style.top = (startMin * WEEK_HOUR_PX + 1) + 'px';
-        div.style.height = Math.max(WEEK_MIN_PX, spanHours * WEEK_HOUR_PX - 2) + 'px';
-        // Side-by-side layout when more than one block starts in this hour.
-        const wpct = 100 / cols;
-        div.style.left = 'calc(' + (i * wpct) + '% + 1px)';
-        div.style.width = 'calc(' + wpct + '% - 2px)';
-        div.style.right = 'auto';
-        cell.appendChild(div);
-      });
-      grid.appendChild(cell);
-    });
+
+  // Row 2, first column: hour labels
+  const times = document.createElement('div');
+  times.className = 'week-times';
+  times.style.height = COL_H + 'px';
+  for (let h = DAY_START; h < DAY_END; h++) {
+    const lab = document.createElement('div');
+    lab.className = 'week-hr';
+    lab.textContent = formatHour(h);
+    times.appendChild(lab);
   }
+  grid.appendChild(times);
+
+  // Row 2: one continuous timeline column per day.
+  days.forEach(d => {
+    const col = document.createElement('div');
+    col.className = 'week-daycol';
+    col.style.height = COL_H + 'px';
+
+    // Events overlapping the visible window, positioned by true start/end.
+    const items = getEvents(d)
+      .filter(e => (e.hour + (e.duration || 0.5)) > DAY_START && e.hour < DAY_END)
+      .map(e => ({
+        e,
+        start: Math.max(e.hour, DAY_START),
+        end: Math.min(e.hour + (e.duration || 0.5), DAY_END)
+      }))
+      .sort((a, b) => a.start - b.start || a.end - b.end);
+
+    // Only genuinely time-overlapping events share width; sequential ones stay full width.
+    assignOverlapColumns(items);
+
+    items.forEach(item => {
+      const e = item.e;
+      const dur = e.duration || 0.5;
+      const wpct = 100 / item.ncols;
+      const div = document.createElement('div');
+      div.className = 'week-event week-event-tall cat-' + catCode(e.cat);
+      div.textContent = e.title;
+      div.title = e.title + ' \u00b7 ' + formatDuration(dur);
+      div.style.top = ((item.start - DAY_START) * HOUR_PX + 1) + 'px';
+      div.style.height = Math.max(MIN_PX, (item.end - item.start) * HOUR_PX - 1) + 'px';
+      div.style.left = 'calc(' + (item.col * wpct) + '% + 1px)';
+      div.style.width = 'calc(' + wpct + '% - 2px)';
+      div.style.right = 'auto';
+      col.appendChild(div);
+    });
+
+    grid.appendChild(col);
+  });
+}
+
+// Greedy interval-graph colouring. Events that overlap in time get separate
+// columns and share the width; events that merely touch (one ends exactly when
+// the next starts) or are disjoint keep the full width and stack vertically.
+// Mutates each item with { col, ncols }.
+function assignOverlapColumns(items) {
+  const EPS = 1e-6;
+  let cluster = [];
+  let clusterEnd = -Infinity;
+  function flush() {
+    const colEnds = [];                 // last end-time placed in each column
+    cluster.forEach(it => {
+      let placed = false;
+      for (let c = 0; c < colEnds.length; c++) {
+        if (it.start >= colEnds[c] - EPS) { it.col = c; colEnds[c] = it.end; placed = true; break; }
+      }
+      if (!placed) { it.col = colEnds.length; colEnds.push(it.end); }
+    });
+    const ncols = colEnds.length;
+    cluster.forEach(it => { it.ncols = ncols; });
+    cluster = [];
+  }
+  items.forEach(it => {
+    if (cluster.length && it.start >= clusterEnd - EPS) { flush(); clusterEnd = -Infinity; }
+    cluster.push(it);
+    clusterEnd = Math.max(clusterEnd, it.end);
+  });
+  if (cluster.length) flush();
 }
 
 function makeCell(cls, html) {
