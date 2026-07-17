@@ -2133,6 +2133,11 @@ function autoCatchUp() {
 state.currentDay = new Date();
 saveState();
 autoCatchUp();
+// Reconcile every already-placed event with the CURRENT preset definitions on
+// each load, so future weeks reflect preset changes even if they were made
+// before this code shipped, or in an earlier session. Safe: today-forward only,
+// completed events preserved, idempotent.
+resyncPresetEvents();
 renderAll();
 updateScheduledTime();
 
