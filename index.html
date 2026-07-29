@@ -199,6 +199,19 @@
 
   .triage-banner { background: #fdf6e9; border: 1px solid #e8d8a8; border-radius: 12px; padding: 12px; margin: 12px 12px 4px; font-size: 12px; color: #6b5b3f; }
   .triage-banner b { color: #4a3f25; }
+  /* Completed-time display (Today checkout bar) */
+  .completed-time { flex: 1; }
+  .completed-time .ct-num { font-size: 20px; font-weight: 700; color: #4a3f25; line-height: 1.1; }
+  .completed-time .ct-lbl { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.4px; }
+  .checkout-prompt .eod-link { background: transparent; color: #8a7a5a; border: 1px solid #ddd6c8; font-size: 11px; padding: 8px 12px; font-weight: 600; }
+  /* Inbox status filters */
+  .inbox-filters { display: flex; gap: 6px; padding: 8px 12px 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .inbox-filter { flex: 0 0 auto; background: #f3f0e8; border: 1px solid #ece8de; color: #6b5b3f; font-size: 12px; padding: 7px 12px; border-radius: 16px; cursor: pointer; min-height: 34px; white-space: nowrap; }
+  .inbox-filter.active { background: #6b5b3f; color: #faf8f3; border-color: #6b5b3f; }
+  .inbox-filter .cnt { opacity: 0.7; font-size: 11px; margin-left: 2px; }
+  .status-select { flex: 0 0 auto; font-size: 12px; padding: 6px; border-radius: 8px; border: 1px solid #ddd6c8; background: #faf8f3; color: #6b5b3f; min-height: 34px; }
+  .inbox-item.status-complete .label { text-decoration: line-through; opacity: 0.6; }
+  .inbox-item.status-parked { opacity: 0.8; }
 
   /* PRESETS */
   .presets-list { padding: 12px; }
@@ -321,7 +334,11 @@
         <div class="calendar-area" id="calendarArea"></div>
         <div class="checkout-prompt">
           <div class="row">
-            <button id="eodBtn" onclick="onEodButton()">⏰ End of day</button>
+            <div class="completed-time">
+              <div class="ct-num" id="completedTimeNum">0m</div>
+              <div class="ct-lbl">completed today</div>
+            </div>
+            <button id="eodBtn" class="eod-link" onclick="onEodButton()">⏰ End of day</button>
           </div>
         </div>
       </div>
@@ -332,15 +349,13 @@
       <div class="week-scroll">
         <div class="week-grid" id="weekGrid"></div>
       </div>
-      <div style="padding: 0 12px 80px; font-size: 11px; color: #888; text-align: center;">Tap a day to jump to it. Use ‹ › to change weeks.<br><span style="font-size:10px; color:#c0b89c;">Build v32</span></div>
+      <div style="padding: 0 12px 80px; font-size: 11px; color: #888; text-align: center;">Tap a day to jump to it. Use ‹ › to change weeks.<br><span style="font-size:10px; color:#c0b89c;">Build v33</span></div>
     </div>
 
     <!-- INBOX -->
     <div class="screen" id="screen-inbox">
       <button class="inbox-add-btn" id="inboxAddBtn">+ Add to inbox</button>
-      <div class="triage-banner" id="triageBanner" style="display:none;">
-        <b>5-task triage:</b> <span id="staleCount">0</span> task(s) sitting for 14+ days. Tap to do, defer, or delete.
-      </div>
+      <div class="inbox-filters" id="inboxFilters"></div>
       <div class="inbox-list" id="inboxList"></div>
     </div>
 
@@ -385,6 +400,8 @@ const CAT_LABELS = {
   housework: 'Housework', grooming: 'Grooming', fitness: 'Fitness', admin: 'Admin',
   social: 'Social', career: 'Career', creativity: 'Creativity', relaxation: 'Relaxation', appt: 'Appointment'
 };
+const STATUS_LABELS = { todo: 'To do', pending: 'Pending', parked: 'Parked', complete: 'Complete' };
+const STATUS_ORDER = ['todo', 'pending', 'parked', 'complete'];
 const CAT_COLORS = {
   housework: '#c0524a', grooming: '#d4b94a', fitness: '#5b9b7b', admin: '#8a5a2a',
   social: '#b86888', career: '#8b6db8', creativity: '#6888b8', relaxation: '#cfc8b8', appt: '#688bb8'
@@ -583,6 +600,10 @@ function runMigrations(s) {
     Object.keys(ebd).forEach(k => (ebd[k] || []).forEach(ev => {
       if (ev.presetId && presetById[ev.presetId]) ev.cat = presetById[ev.presetId].cat;
     }));
+  });
+
+  apply('inbox_status_v1', () => {
+    (s.inbox || []).forEach(t => { if (!t.status) t.status = t.completed ? 'complete' : 'todo'; });
   });
 
   localStorage.setItem(MIGRATION_KEY, JSON.stringify(applied));
@@ -993,6 +1014,14 @@ function updateScheduledTime() {
   if (!el || !numEl) return;
   numEl.textContent = formatDuration(totalH);
   if (totalH > 8) el.classList.add('busy'); else el.classList.remove('busy');
+  updateCompletedTime();
+}
+
+function updateCompletedTime() {
+  const events = getEvents(state.currentDay);
+  const doneH = events.reduce((s, e) => s + (e.completed ? (e.duration || 0) : 0), 0);
+  const num = document.getElementById('completedTimeNum');
+  if (num) num.textContent = formatDuration(doneH);
 }
 
 function toggleEventComplete(eventId) {
@@ -1223,7 +1252,7 @@ function renderTray() {
     available.forEach(item => scroll.appendChild(makePresetTrayItem(item, false)));
     allocated.forEach(item => scroll.appendChild(makePresetTrayItem(item, true)));
   } else {
-    const allInbox = state.inbox.filter(i => !i.completed);
+    const allInbox = state.inbox.filter(i => (i.status || 'todo') === 'todo');
     const available = allInbox.filter(i => !i.scheduledEventId);
     const allocated = allInbox.filter(i => i.scheduledEventId);
     if (allInbox.length === 0) {
@@ -1286,8 +1315,8 @@ function makeInboxTrayItem(item, allocated) {
   el.innerHTML = `
     <button class="tray-item-close" data-action="delete" aria-label="Delete task">×</button>
     <div class="label">${item.label}</div>
-    <div class="meta">${catLabel(item.cat)} · ${item.age || 0}d old</div>
-    ${allocated ? '<div class="allocated-tag">✓ scheduled</div>' : (item.age >= 14 ? '<div class="age">stale — triage?</div>' : '')}
+    <div class="meta">${catLabel(item.cat)} · ${formatDuration(item.duration || 0.5)}</div>
+    ${allocated ? '<div class="allocated-tag">✓ scheduled</div>' : ''}
   `;
   el.querySelector('[data-action="delete"]').addEventListener('click', e => {
     e.stopPropagation();
@@ -1470,11 +1499,10 @@ function executeEndOfDay() {
   let resurfaced = 0;
   let presetMissed = 0;
   state.inbox.forEach(task => {
-    if (task.scheduledEventId && !task.completed) {
+    if (task.scheduledEventId) {
       const ev = events.find(e => e.id === task.scheduledEventId);
       if (ev && !ev.completed) {
         task.scheduledEventId = null; task.scheduledHour = null; task.scheduledDate = null;
-        task.age = (task.age || 0) + 1;
         ev.missed = true;
         resurfaced++;
       }
@@ -1490,7 +1518,6 @@ function executeEndOfDay() {
       if (p) p.skipStreak = 0;
     }
   });
-  state.inbox.forEach(t => { if (!t.scheduledEventId && !t.completed) t.age = (t.age || 0) + 1; });
   saveState();
   renderCalendar(); renderInbox(); renderTray(); renderPresets(); updateEodButton();
 
@@ -1686,31 +1713,33 @@ function makeCell(cls, html) {
 // ============ INBOX ============
 function renderInbox() {
   const list = document.getElementById('inboxList');
+  const filterBar = document.getElementById('inboxFilters');
+  const filter = state.inboxFilter || 'all';
+  // Filter bar with per-status counts
+  const counts = { all: 0, todo: 0, pending: 0, parked: 0, complete: 0 };
+  state.inbox.forEach(t => { const st = t.status || 'todo'; counts[st] = (counts[st] || 0) + 1; counts.all++; });
+  const chips = [['all', 'All']].concat(STATUS_ORDER.map(s => [s, STATUS_LABELS[s]]));
+  if (filterBar) {
+    filterBar.innerHTML = chips.map(([k, lbl]) =>
+      `<button class="inbox-filter${filter === k ? ' active' : ''}" data-filter="${k}">${lbl}<span class="cnt">${counts[k] || 0}</span></button>`
+    ).join('');
+    filterBar.querySelectorAll('.inbox-filter').forEach(b => b.addEventListener('click', () => {
+      state.inboxFilter = b.dataset.filter; saveState(); renderInbox();
+    }));
+  }
+  // List, filtered by selected status
   list.innerHTML = '';
-  const visible = state.inbox.filter(i => !i.scheduledEventId && !i.completed);
-  const stale = visible.filter(i => (i.age || 0) >= 14);
-  const fresh = visible.filter(i => (i.age || 0) < 14);
-  document.getElementById('staleCount').textContent = stale.length;
-  document.getElementById('triageBanner').style.display = stale.length > 0 ? 'block' : 'none';
-  if (stale.length > 0) {
-    const sec = document.createElement('div');
-    sec.className = 'inbox-section';
-    sec.innerHTML = '<h3>Needs triage (14+ days old)</h3>';
-    stale.forEach(item => sec.appendChild(makeInboxItem(item, true)));
-    list.appendChild(sec);
-    enableInboxDrag(sec);
+  const items = state.inbox.filter(t => filter === 'all' ? true : (t.status || 'todo') === filter);
+  if (items.length === 0) {
+    const msg = filter === 'all' ? 'Inbox empty. Tap + to add a task.' : ('No ' + STATUS_LABELS[filter] + ' tasks.');
+    list.innerHTML = `<div style="color:#888; font-size:13px; text-align:center; padding:30px 12px;">${msg}</div>`;
+    return;
   }
-  if (fresh.length > 0) {
-    const sec = document.createElement('div');
-    sec.className = 'inbox-section';
-    sec.innerHTML = '<h3>All tasks</h3>';
-    fresh.forEach(item => sec.appendChild(makeInboxItem(item, false)));
-    list.appendChild(sec);
-    enableInboxDrag(sec);
-  }
-  if (visible.length === 0) {
-    list.innerHTML = '<div style="color:#888; font-size:13px; text-align:center; padding:30px 12px;">Inbox empty. Tap + in the header to add a task.</div>';
-  }
+  const sec = document.createElement('div');
+  sec.className = 'inbox-section';
+  items.forEach(item => sec.appendChild(makeInboxItem(item)));
+  list.appendChild(sec);
+  enableInboxDrag(sec);
 }
 
 // Long-press drag-to-reorder for inbox items, scoped within one section.
@@ -1797,26 +1826,40 @@ function enableInboxDrag(section) {
   section.addEventListener('pointerdown', onPointerDown);
 }
 
-function makeInboxItem(item, isStale) {
+function makeInboxItem(item) {
+  const st = item.status || 'todo';
   const div = document.createElement('div');
-  div.className = 'inbox-item cat-' + catCode(item.cat) + (isStale ? ' stale' : '');
+  div.className = 'inbox-item cat-' + catCode(item.cat) + ' status-' + st;
   div.dataset.id = item.id;
   div.innerHTML = `
     <div class="drag-handle" data-handle aria-label="Drag to reorder">⠿</div>
     <div style="flex:1;">
       <div class="label">${item.label}${item.note ? ' 📝' : ''}</div>
-      <div class="meta">${catLabel(item.cat)} · added ${item.age || 0}d ago</div>
+      <div class="meta">${catLabel(item.cat)} · ${formatDuration(item.duration || 0.5)} allocated</div>
     </div>
+    <select class="status-select" data-status aria-label="Status">
+      ${STATUS_ORDER.map(s => `<option value="${s}" ${s === st ? 'selected' : ''}>${STATUS_LABELS[s]}</option>`).join('')}
+    </select>
     <div class="actions">
       <button data-action="edit">Edit</button>
       <button data-action="delete">Delete</button>
     </div>
   `;
+  div.querySelector('[data-status]').addEventListener('change', e => {
+    e.stopPropagation();
+    item.status = e.target.value;
+    saveState(); renderInbox(); renderTray();
+    showToast('Marked ' + STATUS_LABELS[item.status]);
+  });
   div.querySelector('[data-action="edit"]').addEventListener('click', e => { e.stopPropagation(); openInboxEditModal(item.id); });
   div.querySelector('[data-action="delete"]').addEventListener('click', e => {
     e.stopPropagation();
+    if (item.scheduledEventId && item.scheduledDate) {
+      const events = state.eventsByDate[item.scheduledDate] || [];
+      state.eventsByDate[item.scheduledDate] = events.filter(ev => ev.id !== item.scheduledEventId);
+    }
     state.inbox = state.inbox.filter(i => i.id !== item.id);
-    saveState(); renderInbox(); renderTray();
+    saveState(); renderInbox(); renderTray(); renderCalendar();
     showToast('Deleted');
   });
   return div;
@@ -2165,7 +2208,7 @@ function addInbox() {
   const dur = parseInt(document.getElementById('qaDur').value) / 60;
   const note = document.getElementById('qaNote').value.trim();
   if (text) {
-    state.inbox.unshift({ id: 'i_' + Date.now(), label: text, cat, age: 0, duration: dur, note });
+    state.inbox.unshift({ id: 'i_' + Date.now(), label: text, cat, status: 'todo', duration: dur, note });
     saveState(); renderInbox(); renderTray();
     showToast('Added to inbox');
   }

@@ -1,7 +1,7 @@
 // Personal Planner — Service Worker
 // Caches the app so it works offline once installed.
 
-const CACHE_NAME = 'planner-v32';
+const CACHE_NAME = 'planner-v33';
 const ASSETS = [
   './',
   './index.html',
